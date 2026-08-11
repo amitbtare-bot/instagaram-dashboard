@@ -703,6 +703,28 @@ function openPanel(node){
     });
     html+='</div></div>';
 
+    html+='<div class="sec"><div class="sec-title">🤖 Model Authority</div>';
+    html+='<div class="human-box" style="border-left-color:var(--content)">The Brain decides which AI model each agent uses based on task complexity, cost, and speed requirements. Model assignments are dynamic — upgraded for critical tasks, downgraded for routine ones.</div>';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:.3rem;margin-top:.6rem">';
+    [
+      {name:'CEO / Planner',model:'Opus',color:'#D4A853',reason:'Strategic decisions'},
+      {name:'Creative Dir',model:'Opus / Sonnet',color:'#8B5CF6',reason:'Content quality'},
+      {name:'QA Lead',model:'Sonnet',color:'#10B981',reason:'CVI scoring'},
+      {name:'Viral Strategist',model:'Sonnet',color:'#8B5CF6',reason:'Trend analysis'},
+      {name:'Analytics',model:'Sonnet',color:'#3B82F6',reason:'Data processing'},
+      {name:'QC Inspector',model:'Haiku',color:'#10B981',reason:'Checklist tasks'},
+      {name:'Marketing',model:'Haiku',color:'#3B82F6',reason:'Hashtag research'},
+      {name:'Community',model:'Haiku',color:'#3B82F6',reason:'Reply templates'},
+      {name:'Scheduler',model:'Haiku',color:'#06B6D4',reason:'Slot management'},
+      {name:'Merch Mgr',model:'Haiku',color:'#3B82F6',reason:'Catalog updates'},
+    ].forEach(m=>{
+      html+='<div style="padding:.35rem .5rem;background:var(--card2);border:1px solid var(--border);border-radius:4px;display:flex;justify-content:space-between;align-items:center">';
+      html+='<span style="font-size:.55rem;font-weight:600;color:'+m.color+'">'+m.name+'</span>';
+      html+='<span style="font-size:.5rem;font-weight:700;color:var(--text2);background:var(--card);padding:.1rem .3rem;border-radius:2px;border:1px solid var(--border)">'+m.model+'</span>';
+      html+='</div>';
+    });
+    html+='</div></div>';
+
   } else if(node.type==='div'){
     // Division panel
     const agents=AGENTS.filter(a=>a.div===node.divKey&&a.id!=='ceo');
