@@ -128,6 +128,7 @@ canvas.hovering{cursor:pointer}
 .title-bar{position:fixed;top:1.25rem;left:1.75rem;z-index:50}
 .title-bar h1{font-size:1rem;font-weight:800;letter-spacing:-.02em}
 .title-bar h1 span{color:var(--gold)}
+.title-logo{width:28px;height:28px;vertical-align:middle;margin-right:2px;border-radius:4px}
 .title-bar p{font-size:.6rem;color:var(--text3);margin-top:.2rem;text-transform:uppercase;letter-spacing:.12em}
 .back-link{
   display:inline-flex;align-items:center;gap:.3rem;margin-top:.5rem;
@@ -154,7 +155,7 @@ canvas.hovering{cursor:pointer}
 <canvas id="canvas"></canvas>
 
 <div class="title-bar">
-  <h1>🌶️ <span>Insta Garam</span> Studio</h1>
+  <h1><img src="logo_light.png" alt="IG" class="title-logo"> <span>Insta Garam</span> Studio</h1>
   <p>AI Agent Organization — 4 Divisions · 10 Agents</p>
   <a href="index.html" class="back-link">← Dashboard</a>
 </div>
@@ -184,6 +185,12 @@ canvas.hovering{cursor:pointer}
 
 <script>
 // ─── Data ───
+// Load logo for brain node
+const logoImg = new Image();
+logoImg.src = 'logo_dark.png';
+let logoLoaded = false;
+logoImg.onload = () => { logoLoaded = true; };
+
 const DIVS = {
   content: { label:'Content Studio', color:'#8B5CF6', emoji:'🎬', desc:'Where content is born — ideation, prompts, trend adaptation' },
   quality: { label:'Quality Assurance', color:'#10B981', emoji:'🛡️', desc:'Independent quality function — pre & post production gates' },
@@ -551,11 +558,18 @@ function draw(){
       ctx.strokeStyle='#D4A85355';ctx.lineWidth=1*camZ;ctx.stroke();
     }
 
-    // Emoji
-    const es=n.type==='brain'?22:(n.type==='div'?14:(n.lead?12:10));
-    ctx.font=`${Math.max(8,es*camZ)}px system-ui`;
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(n.emoji,p.x,p.y+1);
+    // Emoji / Logo
+    if(n.type==='brain' && logoLoaded){
+      const logoSize=r*1.4;
+      ctx.save();ctx.beginPath();ctx.arc(p.x,p.y,r*.85,0,Math.PI*2);ctx.clip();
+      ctx.drawImage(logoImg,p.x-logoSize,p.y-logoSize,logoSize*2,logoSize*2);
+      ctx.restore();
+    } else {
+      const es=n.type==='brain'?22:(n.type==='div'?14:(n.lead?12:10));
+      ctx.font=`${Math.max(8,es*camZ)}px system-ui`;
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.emoji,p.x,p.y+1);
+    }
 
     // Label
     if(camZ>.35){
@@ -624,7 +638,8 @@ canvas.addEventListener('touchend',()=>{dragging=false;lastTD=0});
 
 // ─── Panel ───
 function openPanel(node){
-  document.getElementById('pEmoji').textContent=node.emoji;
+  if(node.type==='brain'){document.getElementById('pEmoji').innerHTML='<img src="logo_dark.png" style="width:48px;height:48px;border-radius:8px">';}
+  else{document.getElementById('pEmoji').textContent=node.emoji;}
   document.getElementById('pName').textContent=node.name;
   document.getElementById('pRole').textContent=node.role||'';
 
