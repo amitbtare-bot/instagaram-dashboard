@@ -387,8 +387,9 @@ html,body{
 
 <script>
 // ─── Config ───
-// Auto-detect: if served by ceo_server.py, API = same origin; if opened as file, skip API
-const API_BASE = (window.location.protocol === 'file:') ? '' : window.location.origin;
+// API only available when served by ceo_server.py (localhost or tunnel). GitHub Pages = no API.
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.endsWith('.trycloudflare.com');
+const API_BASE = isLocal ? window.location.origin : '';
 const GITHUB_RAW = 'https://raw.githubusercontent.com/amitbtare-bot/instagaram-autoposter/main/scheduled_posts.json';
 let STATE = { posts: [], connected: false, lastUpdate: null };
 let scratchTimer = null;
@@ -423,31 +424,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // ─── Data Loading ───
 async function loadData() {
-  try {
-    const resp = await fetch(API_BASE + '/api/overview', { signal: AbortSignal.timeout(5000) });
-    if (!resp.ok) throw new Error('API error');
-    const data = await resp.json();
-    STATE.posts = data.posts || FALLBACK_POSTS;
-    STATE.connected = true;
-    STATE.lastUpdate = Date.now();
-    STATE.stats = data.stats;
-    STATE.pending = data.pending;
-    STATE.services = data.services;
-    STATE.reels = data.reels;
-  } catch {
-    // Try GitHub raw (works if repo is public, otherwise use fallback)
+  // Try local API first (only when served by ceo_server.py)
+  if (API_BASE) {
     try {
-      const resp = await fetch(GITHUB_RAW, { signal: AbortSignal.timeout(5000) });
+      const resp = await fetch(API_BASE + '/api/overview', { signal: AbortSignal.timeout(5000) });
       if (resp.ok) {
-        STATE.posts = await resp.json();
-        STATE.connected = false;
+        const data = await resp.json();
+        STATE.posts = data.posts || FALLBACK_POSTS;
+        STATE.connected = true;
         STATE.lastUpdate = Date.now();
+        STATE.stats = data.stats;
+        STATE.pending = data.pending;
+        STATE.services = data.services;
+        STATE.reels = data.reels;
+        render();
+        return;
       }
-    } catch {
-      if (!STATE.posts.length) STATE.posts = FALLBACK_POSTS;
-      STATE.connected = false;
-    }
+    } catch {}
   }
+  // GitHub raw fallback (always works for public repos)
+  try {
+    const resp = await fetch(GITHUB_RAW, { signal: AbortSignal.timeout(8000) });
+    if (resp.ok) {
+      STATE.posts = await resp.json();
+      STATE.connected = false;
+      STATE.lastUpdate = Date.now();
+      render();
+      return;
+    }
+  } catch {}
+  // Embedded fallback
+  if (!STATE.posts.length) STATE.posts = FALLBACK_POSTS;
+  STATE.connected = false;
   render();
 }
 
