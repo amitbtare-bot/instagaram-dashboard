@@ -156,13 +156,13 @@ canvas.hovering{cursor:pointer}
 
 <div class="title-bar">
   <h1><img src="logo_light.png" alt="IG" class="title-logo"> <span>Insta Garam</span> Studio</h1>
-  <p>AI Agent Organization — 4 Divisions · 10 Agents</p>
+  <p>AI Agent Organization — 4 Divisions · 11 Agents</p>
   <a href="index.html" class="back-link">← Dashboard</a>
 </div>
 
 <div class="stats">
   <div class="stat-block"><div class="num" style="color:var(--gold)">4</div><div class="label">Divisions</div></div>
-  <div class="stat-block"><div class="num">10</div><div class="label">Agents</div></div>
+  <div class="stat-block"><div class="num">11</div><div class="label">Agents</div></div>
 </div>
 
 <div class="instruction" id="instruction">
@@ -338,6 +338,20 @@ const AGENTS = [
     skills:['7AM+7PM scheduling','GitHub Actions cron','Cloudinary orchestration','Graph API publishing','Status tracking'],
     feedsInto:[],
     feedsFrom:['planner'],
+  },
+  {
+    id:'merch', name:'Merch Manager', emoji:'🛍️', div:'growth', lead:false,
+    role:'Viral-to-merch pipeline — tracks best sellers, manages catalog & storefront',
+    replaces:{role:'E-commerce Manager',cost:'₹2-4L/yr'},
+    ladder:[
+      {level:'Human-Led',desc:'User manually creates merch listings',current:true},
+      {level:'Human-Assisted',desc:'Agent identifies viral icons, proposes products, user approves',current:false},
+      {level:'Fully Autonomous',desc:'Auto-creates listings when reels go viral, tracks sales',current:false},
+    ],
+    human:'Approves new product listings. Reviews weekly sales report.',
+    skills:['Viral detection','Redbubble/Printful','Catalog management','Sales analytics','Content-to-merch pipeline'],
+    feedsInto:['marketing','content'],
+    feedsFrom:['analytics','community'],
   },
 ];
 
