@@ -1,0 +1,779 @@
+<title>Insta Garam — Agent Map</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#08081A;--panel:#0E0E24;--panel-border:#1A1A3A;
+  --text:#E0E0F0;--text2:#8888AA;--text3:#555577;
+  --flame:#E85A2A;--flame-dim:#E85A2A30;
+  --cmd:#E85A2A;--creative:#A66CFF;--production:#4AE88A;
+  --growth:#E8D44A;--ops:#4AC8E8;
+}
+html,body{
+  background:var(--bg);color:var(--text);
+  font-family:-apple-system,system-ui,'Segoe UI',sans-serif;
+  height:100%;overflow:hidden;-webkit-font-smoothing:antialiased;
+}
+canvas{display:block;width:100%;height:100%;cursor:grab}
+canvas:active{cursor:grabbing}
+canvas.hovering{cursor:pointer}
+
+/* Detail Panel */
+.panel{
+  position:fixed;right:-420px;top:0;bottom:0;width:400px;max-width:85vw;
+  background:var(--panel);border-left:1px solid var(--panel-border);
+  z-index:100;transition:right .35s cubic-bezier(.4,0,.2,1);
+  overflow-y:auto;padding:0;
+  box-shadow:-20px 0 60px rgba(0,0,0,.5);
+}
+.panel.open{right:0}
+.panel-header{
+  padding:1.5rem 1.5rem 1rem;position:sticky;top:0;
+  background:var(--panel);z-index:1;
+  border-bottom:1px solid var(--panel-border);
+}
+.panel-close{
+  position:absolute;top:1rem;right:1rem;width:32px;height:32px;
+  border:1px solid var(--panel-border);border-radius:6px;background:transparent;
+  color:var(--text2);cursor:pointer;font-size:1.1rem;display:flex;
+  align-items:center;justify-content:center;transition:all .15s;
+}
+.panel-close:hover{background:var(--panel-border);color:var(--text)}
+.panel-emoji{font-size:2.2rem;margin-bottom:.5rem}
+.panel-name{font-size:1.4rem;font-weight:800;letter-spacing:-.02em}
+.panel-role{font-size:.8rem;color:var(--text2);margin-top:.15rem;font-weight:500}
+.dept-badge{
+  display:inline-block;font-size:.55rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;padding:.2rem .6rem;border-radius:3px;margin-top:.5rem;
+}
+.panel-body{padding:1.5rem}
+.section-title{
+  font-size:.6rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--text3);margin-bottom:.6rem;
+  margin-top:1.4rem;
+}
+.section-title:first-child{margin-top:0}
+.replaces-box{
+  background:#1A0A0A;border:1px solid #3A1515;border-radius:8px;
+  padding:.85rem 1rem;
+}
+.replaces-role{font-size:.85rem;font-weight:700;color:#FF6B6B}
+.replaces-cost{font-size:.7rem;color:var(--text2);margin-top:.15rem}
+.ladder{display:flex;flex-direction:column;gap:.4rem}
+.ladder-step{
+  display:flex;align-items:flex-start;gap:.6rem;
+  padding:.6rem .75rem;border-radius:6px;background:#0A0A20;
+  border:1px solid var(--panel-border);
+}
+.ladder-step.current{border-color:var(--flame);background:var(--flame-dim)}
+.ladder-label{
+  font-size:.55rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.06em;min-width:5.5rem;padding-top:.1rem;
+  color:var(--text3);
+}
+.ladder-step.current .ladder-label{color:var(--flame)}
+.ladder-desc{font-size:.72rem;color:var(--text2);line-height:1.4}
+.tag-list{display:flex;flex-wrap:wrap;gap:.3rem}
+.tag{
+  font-size:.6rem;font-weight:600;padding:.2rem .5rem;
+  border-radius:3px;background:#12122A;border:1px solid var(--panel-border);
+  color:var(--text2);
+}
+.human-note{
+  font-size:.72rem;color:var(--text2);line-height:1.5;
+  padding:.75rem 1rem;background:#0A0A20;border-radius:6px;
+  border-left:3px solid var(--flame);
+}
+.skills-list{display:flex;flex-direction:column;gap:.3rem}
+.skill{
+  display:flex;align-items:center;gap:.5rem;
+  font-size:.72rem;color:var(--text);padding:.3rem 0;
+}
+.skill::before{content:"✓";color:var(--production);font-weight:700;font-size:.65rem}
+
+/* Legend */
+.legend{
+  position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);
+  display:flex;gap:1.2rem;padding:.5rem 1.2rem;
+  background:rgba(14,14,36,.85);backdrop-filter:blur(10px);
+  border:1px solid var(--panel-border);border-radius:8px;z-index:50;
+}
+.legend-item{display:flex;align-items:center;gap:.35rem;cursor:pointer;transition:opacity .2s}
+.legend-item:hover{opacity:.7}
+.legend-dot{width:8px;height:8px;border-radius:50%}
+.legend-label{font-size:.6rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
+
+/* Title */
+.title-bar{
+  position:fixed;top:1rem;left:1.5rem;z-index:50;
+}
+.title-bar h1{font-size:1.1rem;font-weight:800;letter-spacing:-.02em}
+.title-bar h1 span{color:var(--flame)}
+.title-bar p{font-size:.65rem;color:var(--text2);margin-top:.15rem}
+.back-link{
+  display:inline-block;margin-top:.4rem;font-size:.6rem;font-weight:600;
+  color:var(--flame);text-decoration:none;padding:.2rem .5rem;
+  border:1px solid var(--flame);border-radius:4px;transition:all .15s;
+}
+.back-link:hover{background:var(--flame);color:#fff}
+
+/* Instruction */
+.instruction{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  text-align:center;pointer-events:none;z-index:10;
+  transition:opacity 1.5s;
+}
+.instruction.hidden{opacity:0}
+.instruction h2{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;margin-bottom:.3rem}
+.instruction p{font-size:.8rem;color:var(--text2)}
+
+/* Stats overlay */
+.stats-overlay{
+  position:fixed;top:1rem;right:1.5rem;z-index:50;
+  text-align:right;
+}
+.stats-overlay .so-num{font-size:2rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--flame);line-height:1}
+.stats-overlay .so-label{font-size:.55rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-weight:700}
+</style>
+
+<canvas id="canvas"></canvas>
+
+<div class="title-bar">
+  <h1>🌶️ Insta <span>Garam</span> Studio</h1>
+  <p>AI Agent Constellation — 10 agents, 5 departments</p>
+  <a href="index.html" class="back-link">← Dashboard</a>
+</div>
+
+<div class="stats-overlay">
+  <div class="so-num">10</div>
+  <div class="so-label">Active Agents</div>
+</div>
+
+<div class="instruction" id="instruction">
+  <h2>Click any node to explore</h2>
+  <p>Drag to pan · Scroll to zoom</p>
+</div>
+
+<div class="legend" id="legend"></div>
+
+<div class="panel" id="panel">
+  <div class="panel-header">
+    <button class="panel-close" onclick="closePanel()">✕</button>
+    <div class="panel-emoji" id="pEmoji"></div>
+    <div class="panel-name" id="pName"></div>
+    <div class="panel-role" id="pRole"></div>
+    <div class="dept-badge" id="pDept"></div>
+  </div>
+  <div class="panel-body" id="pBody"></div>
+</div>
+
+<script>
+// ─── Agent Data ───
+const DEPTS = {
+  command:    { label: 'Command',    color: '#E85A2A', emoji: '👑' },
+  creative:  { label: 'Creative',   color: '#A66CFF', emoji: '🎨' },
+  production:{ label: 'Production', color: '#4AE88A', emoji: '🔧' },
+  growth:    { label: 'Growth',     color: '#E8D44A', emoji: '📈' },
+  operations:{ label: 'Operations', color: '#4AC8E8', emoji: '⚙️' },
+};
+
+const AGENTS = [
+  {
+    id: 'ceo', name: 'CEO Agent', emoji: '👑', dept: 'command',
+    role: 'Top-level orchestrator & decision maker',
+    replaces: { role: 'Studio Manager / Producer', cost: '₹5-8L/year' },
+    ladder: [
+      { level: 'Human-Led', desc: 'User makes all decisions, agent only tracks state', current: false },
+      { level: 'Human-Assisted', desc: 'Agent proposes daily plans, user approves with one tap', current: true },
+      { level: 'Fully Autonomous', desc: 'Agent runs morning standup, assigns tasks, escalates only exceptions', current: false },
+    ],
+    buildsOn: [],
+    breaksInto: ['planner', 'content', 'viral'],
+    human: 'CEO reviews the morning standup summary and approves/rejects recommendations via Telegram. All publishing requires explicit CEO approval.',
+    skills: ['Morning standup orchestration', 'Cross-agent task delegation', 'Approval routing via Telegram', 'Exception escalation', 'Session state management'],
+  },
+  {
+    id: 'content', name: 'Creative Director', emoji: '🎬', dept: 'creative',
+    role: 'Content ideas, Gemini prompts & captions',
+    replaces: { role: 'Content Writer + Scriptwriter', cost: '₹3-5L/year' },
+    ladder: [
+      { level: 'Human-Led', desc: 'User writes all prompts and captions manually', current: false },
+      { level: 'Human-Assisted', desc: 'Agent generates full content packages, user edits before generation', current: true },
+      { level: 'Fully Autonomous', desc: 'Packages go straight to QA gate with zero human input', current: false },
+    ],
+    buildsOn: ['viral'],
+    breaksInto: ['qa'],
+    human: 'Reviews generated content packages for brand voice, cultural sensitivity, and trend alignment before video generation.',
+    skills: ['Gemini video prompt engineering', 'Caption writing with CTAs', 'SEO hashtag packs', 'Hook text overlays', 'Bobblehead character description'],
+  },
+  {
+    id: 'viral', name: 'Viral Agent', emoji: '🔥', dept: 'growth',
+    role: 'Daily viral intelligence & trend monitoring',
+    replaces: { role: 'Social Media Analyst', cost: '₹2-4L/year' },
+    ladder: [
+      { level: 'Human-Led', desc: 'User manually browses Instagram for inspiration', current: false },
+      { level: 'Human-Assisted', desc: 'Agent scans top AI cartoon reels daily, extracts one actionable takeaway', current: true },
+      { level: 'Fully Autonomous', desc: 'DVRI feeds directly into content pipeline, auto-adjusting style based on what\'s working', current: false },
+    ],
+    buildsOn: [],
+    breaksInto: ['content'],
+    human: 'CEO reviews DVRI report in morning standup. Decides which insights to incorporate into next batch.',
+    skills: ['DVRI daily scan', 'Competitor benchmarking', 'Trend pattern recognition', 'Pappu Express scoring', 'Engagement pattern analysis'],
+  },
+  {
+    id: 'qa', name: 'QA Agent', emoji: '🔍', dept: 'creative',
+    role: 'Pre-generation quality gate',
+    replaces: { role: 'Creative QA Lead', cost: '₹2-3L/year' },
+    ladder: [
+      { level: 'Human-Led', desc: 'User proofreads every prompt and caption', current: false },
+      { level: 'Human-Assisted', desc: 'Agent flags issues, user decides whether to fix or proceed', current: true },
+      { level: 'Fully Autonomous', desc: 'Auto-rejects packages below quality threshold, re-routes to Content Director', current: false },
+    ],
+    buildsOn: ['content'],
+    breaksInto: [],
+    human: 'QA gate blocks video generation until package passes. User can override for urgent posts.',
+    skills: ['Prompt validation', 'Caption grammar & tone check', 'Hashtag relevance scoring', 'Brand guideline enforcement', 'Bobblehead style compliance'],
+  },
+  {
+    id: 'qc', name: 'QC Agent', emoji: '✅', dept: 'production',
+    role: 'Post-processing inspection & scoring',
+    replaces: { role: 'Video QC Editor', cost: '₹2-3L/year' },
+    ladder: [
+      { level: 'Human-Led', desc: 'User watches every video and checks manually', current: false },
+      { level: 'Human-Assisted', desc: 'Agent runs CVI scoring (70+ to pass) and Pappu Express benchmark (30% deviation OK)', current: true },
+      { level: 'Fully Autonomous', desc: 'Auto-routes passing videos to CEO approval, auto-rejects failures with feedback', current: false },
+    ],
+    buildsOn: [],
+    breaksInto: [],
+    human: 'Videos scoring below CVI 70 are flagged. User decides: re-generate, re-process, or override.',
+    skills: ['CVI 100-point scoring', 'Pappu Express benchmarking', 'FFmpeg output validation', 'Video resolution check', 'Watermark verification'],
+  },
+  {
+    id: 'analytics', name: 'Analytics Officer', emoji: '📊', dept: 'growth',
+    role: 'Engagement tracking & performance insights',
+    replaces: { role: 'Data Analyst (part-time)', cost: '₹1-2L/year' },
+    ladder: [
+      { level: 'Human-Led', desc: 'User checks Instagram insights manually', current: true },
+      { level: 'Human-Assisted', desc: 'Agent pulls metrics via Graph API, generates weekly performance reports', current: false },
+      { level: 'Fully Autonomous', desc: 'Auto-adjusts posting times and content mix based on engagement data', current: false },
+    ],
+    buildsOn: ['qc'],
+    breaksInto: ['viral'],
+    human: 'Reviews weekly analytics report in Sunday batch planning session.',
+    skills: ['Instagram Graph API metrics', 'Engagement rate calculation', 'Best posting time analysis', 'Content type performance', 'Follower growth tracking'],
+  },
+  {
+    id: 'marketing', name: 'Head of Growth', emoji: '🚀', dept: 'growth',
+    role: 'Hashtags, collaborations & growth tactics',
+    replaces: { role: 'Growth Marketer', cost: '₹3-5L/year' },
+    ladder: [
+      { level: 'Human-Led', desc: 'User researches hashtags and outreach manually', current: true },
+      { level: 'Human-Assisted', desc: 'Agent generates hashtag strategies and collaboration shortlists', current: false },
+      { level: 'Fully Autonomous', desc: 'Auto-rotates hashtag sets based on performance, sends collab DMs', current: false },
+    ],
+    buildsOn: ['analytics'],
+    breaksInto: [],
+    human: 'Approves hashtag rotations and collaboration targets before outreach.',
+    skills: ['Hashtag research & rotation', 'Collaboration targeting', 'Cross-platform distribution', 'Audience segmentation', '#AICartoon niche positioning'],
+  },
+  {
+    id: 'community', name: 'Community Manager', emoji: '💬', dept: 'operations',
+    role: 'Comments, DMs & audience engagement',
+    replaces: { role: 'Social Media Manager (part-time)', cost: '₹1-2L/year' },
+    ladder: [
+      { level: 'Human-Led', desc: 'User replies to all comments and DMs manually', current: true },
+      { level: 'Human-Assisted', desc: 'Agent drafts reply templates, user sends with one click', current: false },
+      { level: 'Fully Autonomous', desc: 'Auto-replies to common comments, flags unusual DMs for human review', current: false },
+    ],
+    buildsOn: [],
+    breaksInto: [],
+    human: 'Reviews all DM conversations. Comment replies need approval for first 100 followers.',
+    skills: ['Comment response templates', 'DM conversation flows', 'Follower relationship tracking', 'Spam/bot detection', 'Engagement timing optimization'],
+  },
+  {
+    id: 'planner', name: 'Strategic Planner', emoji: '📋', dept: 'operations',
+    role: 'Master calendar, daily tasks & batch planning',
+    replaces: { role: 'Project Manager', cost: '₹3-5L/year' },
+    ladder: [
+      { level: 'Human-Led', desc: 'User manually tracks what to do each day', current: false },
+      { level: 'Human-Assisted', desc: 'Agent generates daily task list and weekly batch plan, user adjusts', current: true },
+      { level: 'Fully Autonomous', desc: 'Auto-schedules production sprints, re-prioritizes on buffer level changes', current: false },
+    ],
+    buildsOn: ['ceo'],
+    breaksInto: ['calendar', 'content'],
+    human: 'CEO approves weekly batch plan every Sunday. Daily tasks shown in morning standup.',
+    skills: ['7-day buffer management', 'Sunday batch sprint planning', 'Daily task scheduling', 'Cross-agent coordination', 'Deadline tracking & alerts'],
+  },
+  {
+    id: 'calendar', name: 'Scheduler', emoji: '📅', dept: 'operations',
+    role: 'Posting schedule & GitHub Actions autoposter',
+    replaces: { role: 'Social Media Scheduler', cost: '₹50K/year (tool cost)' },
+    ladder: [
+      { level: 'Human-Led', desc: 'User manually schedules each post', current: false },
+      { level: 'Human-Assisted', desc: 'Agent proposes optimal times, user confirms. GitHub Actions auto-publishes.', current: true },
+      { level: 'Fully Autonomous', desc: 'Auto-schedules at optimal times, adjusts based on timezone engagement data', current: false },
+    ],
+    buildsOn: ['planner'],
+    breaksInto: [],
+    human: 'Reviews scheduled_posts.json for accuracy. Autoposter runs every 5 minutes via GitHub Actions.',
+    skills: ['2-slot daily scheduling (7AM + 7PM IST)', 'GitHub Actions cron management', 'Cloudinary upload orchestration', 'Instagram Graph API publishing', 'Post status tracking'],
+  },
+];
+
+// ─── Links between agents ───
+const LINKS = [];
+AGENTS.forEach(a => {
+  (a.breaksInto || []).forEach(t => {
+    LINKS.push({ source: a.id, target: t, type: 'breaks' });
+  });
+  (a.buildsOn || []).forEach(t => {
+    LINKS.push({ source: t, target: a.id, type: 'builds' });
+  });
+});
+
+// ─── Canvas Setup ───
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H, dpr;
+let camX = 0, camY = 0, camZ = 1;
+let dragging = false, dragStart = { x: 0, y: 0 }, camStart = { x: 0, y: 0 };
+let hoveredNode = null, selectedNode = null;
+let stars = [];
+let tick = 0;
+
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Generate background stars
+for (let i = 0; i < 300; i++) {
+  stars.push({
+    x: (Math.random() - 0.5) * 3000,
+    y: (Math.random() - 0.5) * 3000,
+    r: Math.random() * 1.2 + 0.2,
+    a: Math.random() * 0.5 + 0.1,
+    speed: Math.random() * 0.002 + 0.001,
+  });
+}
+
+// ─── Physics Simulation ───
+const nodes = AGENTS.map((a, i) => {
+  // Position by department cluster
+  const deptPositions = {
+    command:    { cx: 0, cy: -120 },
+    creative:  { cx: -200, cy: -30 },
+    production:{ cx: 200, cy: -30 },
+    growth:    { cx: -130, cy: 150 },
+    operations:{ cx: 130, cy: 150 },
+  };
+  const dp = deptPositions[a.dept];
+  return {
+    ...a,
+    x: dp.cx + (Math.random() - 0.5) * 100,
+    y: dp.cy + (Math.random() - 0.5) * 80,
+    vx: 0, vy: 0,
+    radius: a.id === 'ceo' ? 28 : 20,
+    color: DEPTS[a.dept].color,
+  };
+});
+
+const nodeMap = {};
+nodes.forEach(n => nodeMap[n.id] = n);
+
+function simulate() {
+  // Repulsion
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      let dx = nodes[j].x - nodes[i].x;
+      let dy = nodes[j].y - nodes[i].y;
+      let d = Math.sqrt(dx * dx + dy * dy) || 1;
+      let f = 8000 / (d * d);
+      let fx = (dx / d) * f;
+      let fy = (dy / d) * f;
+      nodes[i].vx -= fx; nodes[i].vy -= fy;
+      nodes[j].vx += fx; nodes[j].vy += fy;
+    }
+  }
+  // Link attraction
+  LINKS.forEach(l => {
+    const a = nodeMap[l.source], b = nodeMap[l.target];
+    if (!a || !b) return;
+    let dx = b.x - a.x, dy = b.y - a.y;
+    let d = Math.sqrt(dx * dx + dy * dy) || 1;
+    let f = (d - 120) * 0.01;
+    let fx = (dx / d) * f, fy = (dy / d) * f;
+    a.vx += fx; a.vy += fy;
+    b.vx -= fx; b.vy -= fy;
+  });
+  // Department clustering
+  nodes.forEach(n => {
+    const dp = { command:{cx:0,cy:-150}, creative:{cx:-250,cy:-20}, production:{cx:250,cy:-20}, growth:{cx:-160,cy:180}, operations:{cx:160,cy:180} }[n.dept];
+    n.vx += (dp.cx - n.x) * 0.003;
+    n.vy += (dp.cy - n.y) * 0.003;
+  });
+  // Damping + update
+  nodes.forEach(n => {
+    n.vx *= 0.85; n.vy *= 0.85;
+    n.x += n.vx; n.y += n.vy;
+  });
+}
+
+// Run initial simulation
+for (let i = 0; i < 200; i++) simulate();
+
+// ─── Rendering ───
+function worldToScreen(wx, wy) {
+  return { x: (wx - camX) * camZ + W / 2, y: (wy - camY) * camZ + H / 2 };
+}
+function screenToWorld(sx, sy) {
+  return { x: (sx - W / 2) / camZ + camX, y: (sy - H / 2) / camZ + camY };
+}
+
+function draw() {
+  tick++;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background gradient
+  const bg = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W, H) * 0.7);
+  bg.addColorStop(0, '#0E0E28');
+  bg.addColorStop(1, '#08081A');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Stars
+  stars.forEach(s => {
+    const p = worldToScreen(s.x, s.y);
+    const flicker = Math.sin(tick * s.speed * 2 + s.x) * 0.3 + 0.7;
+    ctx.globalAlpha = s.a * flicker;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, s.r * camZ, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // Department labels
+  const deptPos = { command:{x:0,y:-220}, creative:{x:-250,y:-100}, production:{x:250,y:-100}, growth:{x:-160,y:90}, operations:{x:160,y:90} };
+  Object.entries(deptPos).forEach(([key, pos]) => {
+    const p = worldToScreen(pos.x, pos.y);
+    ctx.font = `700 ${Math.max(9, 11 * camZ)}px -apple-system,system-ui,sans-serif`;
+    ctx.fillStyle = DEPTS[key].color + '60';
+    ctx.textAlign = 'center';
+    ctx.letterSpacing = '3px';
+    ctx.fillText(DEPTS[key].label.toUpperCase(), p.x, p.y);
+    ctx.letterSpacing = '0px';
+  });
+
+  // Links
+  LINKS.forEach(l => {
+    const a = nodeMap[l.source], b = nodeMap[l.target];
+    if (!a || !b) return;
+    const pa = worldToScreen(a.x, a.y);
+    const pb = worldToScreen(b.x, b.y);
+
+    const isHighlight = selectedNode && (selectedNode.id === l.source || selectedNode.id === l.target);
+    const isHoverHL = hoveredNode && (hoveredNode.id === l.source || hoveredNode.id === l.target);
+
+    ctx.beginPath();
+    ctx.moveTo(pa.x, pa.y);
+    ctx.lineTo(pb.x, pb.y);
+
+    if (isHighlight) {
+      ctx.strokeStyle = a.color + 'AA';
+      ctx.lineWidth = 2 * camZ;
+    } else if (isHoverHL) {
+      ctx.strokeStyle = a.color + '66';
+      ctx.lineWidth = 1.5 * camZ;
+    } else {
+      ctx.strokeStyle = '#FFFFFF15';
+      ctx.lineWidth = 1 * camZ;
+    }
+    ctx.stroke();
+
+    // Animated particles on highlighted links
+    if (isHighlight || isHoverHL) {
+      const t = (tick * 0.015) % 1;
+      const px = pa.x + (pb.x - pa.x) * t;
+      const py = pa.y + (pb.y - pa.y) * t;
+      ctx.beginPath();
+      ctx.arc(px, py, 2 * camZ, 0, Math.PI * 2);
+      ctx.fillStyle = a.color;
+      ctx.fill();
+    }
+  });
+
+  // Nodes
+  nodes.forEach(n => {
+    const p = worldToScreen(n.x, n.y);
+    const r = n.radius * camZ;
+    const isSelected = selectedNode && selectedNode.id === n.id;
+    const isHovered = hoveredNode && hoveredNode.id === n.id;
+    const isConnected = selectedNode && (
+      LINKS.some(l => (l.source === selectedNode.id && l.target === n.id) || (l.target === selectedNode.id && l.source === n.id))
+    );
+    const isDimmed = selectedNode && !isSelected && !isConnected;
+
+    // Glow
+    if (isSelected || isHovered) {
+      const glow = ctx.createRadialGradient(p.x, p.y, r * 0.5, p.x, p.y, r * 3);
+      glow.addColorStop(0, n.color + '40');
+      glow.addColorStop(1, n.color + '00');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r * 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Pulse ring for selected
+    if (isSelected) {
+      const pulseR = r + (Math.sin(tick * 0.05) * 4 + 6) * camZ;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, pulseR, 0, Math.PI * 2);
+      ctx.strokeStyle = n.color + '40';
+      ctx.lineWidth = 1.5 * camZ;
+      ctx.stroke();
+    }
+
+    // Node circle
+    ctx.globalAlpha = isDimmed ? 0.25 : 1;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    const grad = ctx.createRadialGradient(p.x - r * 0.3, p.y - r * 0.3, 0, p.x, p.y, r);
+    grad.addColorStop(0, n.color);
+    grad.addColorStop(1, n.color + 'AA');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Border
+    ctx.strokeStyle = isSelected ? '#FFFFFF' : n.color;
+    ctx.lineWidth = (isSelected ? 2.5 : 1) * camZ;
+    ctx.stroke();
+
+    // Emoji
+    const fontSize = Math.max(10, (n.id === 'ceo' ? 18 : 14) * camZ);
+    ctx.font = `${fontSize}px -apple-system,system-ui,sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(n.emoji, p.x, p.y + 1);
+
+    // Name label below
+    if (camZ > 0.5) {
+      ctx.font = `600 ${Math.max(8, 10 * camZ)}px -apple-system,system-ui,sans-serif`;
+      ctx.fillStyle = isDimmed ? '#FFFFFF30' : '#FFFFFFCC';
+      ctx.textBaseline = 'top';
+      ctx.fillText(n.name, p.x, p.y + r + 6 * camZ);
+    }
+
+    ctx.globalAlpha = 1;
+  });
+
+  // Continue simulation gently
+  if (tick < 500) simulate();
+
+  requestAnimationFrame(draw);
+}
+
+// ─── Interaction ───
+function getNodeAt(sx, sy) {
+  const w = screenToWorld(sx, sy);
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const n = nodes[i];
+    const dx = w.x - n.x, dy = w.y - n.y;
+    if (dx * dx + dy * dy < (n.radius + 5) * (n.radius + 5)) return n;
+  }
+  return null;
+}
+
+canvas.addEventListener('mousedown', e => {
+  const node = getNodeAt(e.clientX, e.clientY);
+  if (node) return;
+  dragging = true;
+  dragStart = { x: e.clientX, y: e.clientY };
+  camStart = { x: camX, y: camY };
+});
+
+canvas.addEventListener('mousemove', e => {
+  if (dragging) {
+    camX = camStart.x - (e.clientX - dragStart.x) / camZ;
+    camY = camStart.y - (e.clientY - dragStart.y) / camZ;
+    return;
+  }
+  const node = getNodeAt(e.clientX, e.clientY);
+  hoveredNode = node;
+  canvas.classList.toggle('hovering', !!node);
+});
+
+canvas.addEventListener('mouseup', () => { dragging = false; });
+canvas.addEventListener('mouseleave', () => { dragging = false; hoveredNode = null; });
+
+canvas.addEventListener('click', e => {
+  const node = getNodeAt(e.clientX, e.clientY);
+  if (node) {
+    selectedNode = node;
+    openPanel(node);
+    document.getElementById('instruction').classList.add('hidden');
+  } else if (!dragging) {
+    closePanel();
+  }
+});
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+  const newZ = Math.max(0.3, Math.min(3, camZ * zoomFactor));
+  // Zoom toward cursor
+  const w = screenToWorld(e.clientX, e.clientY);
+  camZ = newZ;
+  camX = w.x - (e.clientX - W / 2) / camZ;
+  camY = w.y - (e.clientY - H / 2) / camZ;
+}, { passive: false });
+
+// Touch support
+let lastTouchDist = 0;
+canvas.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) {
+    const t = e.touches[0];
+    const node = getNodeAt(t.clientX, t.clientY);
+    if (node) { selectedNode = node; openPanel(node); document.getElementById('instruction').classList.add('hidden'); return; }
+    dragging = true;
+    dragStart = { x: t.clientX, y: t.clientY };
+    camStart = { x: camX, y: camY };
+  } else if (e.touches.length === 2) {
+    const dx = e.touches[1].clientX - e.touches[0].clientX;
+    const dy = e.touches[1].clientY - e.touches[0].clientY;
+    lastTouchDist = Math.sqrt(dx * dx + dy * dy);
+  }
+});
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length === 1 && dragging) {
+    const t = e.touches[0];
+    camX = camStart.x - (t.clientX - dragStart.x) / camZ;
+    camY = camStart.y - (t.clientY - dragStart.y) / camZ;
+  } else if (e.touches.length === 2) {
+    const dx = e.touches[1].clientX - e.touches[0].clientX;
+    const dy = e.touches[1].clientY - e.touches[0].clientY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (lastTouchDist) {
+      camZ = Math.max(0.3, Math.min(3, camZ * (dist / lastTouchDist)));
+    }
+    lastTouchDist = dist;
+  }
+}, { passive: false });
+canvas.addEventListener('touchend', () => { dragging = false; lastTouchDist = 0; });
+
+// ─── Panel ───
+function openPanel(node) {
+  document.getElementById('pEmoji').textContent = node.emoji;
+  document.getElementById('pName').textContent = node.name;
+  document.getElementById('pRole').textContent = node.role;
+  const badge = document.getElementById('pDept');
+  badge.textContent = DEPTS[node.dept].label;
+  badge.style.background = node.color + '20';
+  badge.style.color = node.color;
+  badge.style.border = '1px solid ' + node.color + '40';
+
+  let html = '';
+
+  // What it replaces
+  html += '<div class="section-title">What It Replaces</div>';
+  html += '<div class="replaces-box"><div class="replaces-role">' + node.replaces.role + '</div>';
+  html += '<div class="replaces-cost">' + node.replaces.cost + '</div></div>';
+
+  // The Ladder
+  html += '<div class="section-title">The Automation Ladder</div><div class="ladder">';
+  node.ladder.forEach(l => {
+    html += '<div class="ladder-step' + (l.current ? ' current' : '') + '">';
+    html += '<div class="ladder-label">' + l.level + '</div>';
+    html += '<div class="ladder-desc">' + l.desc + '</div></div>';
+  });
+  html += '</div>';
+
+  // Breaks into
+  if (node.breaksInto.length) {
+    html += '<div class="section-title">Breaks Into</div><div class="tag-list">';
+    node.breaksInto.forEach(id => {
+      const t = nodeMap[id];
+      if (t) html += '<div class="tag" style="cursor:pointer;border-color:' + t.color + '40;color:' + t.color + '" onclick="selectById(\'' + id + '\')">' + t.emoji + ' ' + t.name + '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Builds on
+  if (node.buildsOn.length) {
+    html += '<div class="section-title">Builds On</div><div class="tag-list">';
+    node.buildsOn.forEach(id => {
+      const t = nodeMap[id];
+      if (t) html += '<div class="tag" style="cursor:pointer;border-color:' + t.color + '40;color:' + t.color + '" onclick="selectById(\'' + id + '\')">' + t.emoji + ' ' + t.name + '</div>';
+    });
+    html += '</div>';
+  }
+
+  // The Human
+  html += '<div class="section-title">The Human</div>';
+  html += '<div class="human-note">' + node.human + '</div>';
+
+  // Skills
+  html += '<div class="section-title">Skills</div><div class="skills-list">';
+  node.skills.forEach(s => { html += '<div class="skill">' + s + '</div>'; });
+  html += '</div>';
+
+  document.getElementById('pBody').innerHTML = html;
+  document.getElementById('panel').classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('panel').classList.remove('open');
+  selectedNode = null;
+}
+
+function selectById(id) {
+  const n = nodeMap[id];
+  if (n) { selectedNode = n; openPanel(n); }
+}
+
+// ─── Legend ───
+(function buildLegend() {
+  const el = document.getElementById('legend');
+  el.innerHTML = Object.entries(DEPTS).map(([k, d]) =>
+    '<div class="legend-item" onclick="focusDept(\'' + k + '\')">' +
+    '<div class="legend-dot" style="background:' + d.color + ';box-shadow:0 0 6px ' + d.color + '"></div>' +
+    '<div class="legend-label">' + d.label + '</div></div>'
+  ).join('');
+})();
+
+function focusDept(dept) {
+  const deptNodes = nodes.filter(n => n.dept === dept);
+  if (!deptNodes.length) return;
+  let cx = 0, cy = 0;
+  deptNodes.forEach(n => { cx += n.x; cy += n.y; });
+  cx /= deptNodes.length; cy /= deptNodes.length;
+  // Animate to department
+  const startX = camX, startY = camY, startZ = camZ;
+  const targetZ = 1.5;
+  let t = 0;
+  function animStep() {
+    t += 0.03;
+    if (t > 1) t = 1;
+    const ease = 1 - Math.pow(1 - t, 3);
+    camX = startX + (cx - startX) * ease;
+    camY = startY + (cy - startY) * ease;
+    camZ = startZ + (targetZ - startZ) * ease;
+    if (t < 1) requestAnimationFrame(animStep);
+  }
+  animStep();
+}
+
+// Hide instruction after 4 seconds
+setTimeout(() => { document.getElementById('instruction').classList.add('hidden'); }, 4000);
+
+// Start
+draw();
+</script>

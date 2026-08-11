@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Insta Garam — CEO Command Center</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0D0D0F;--bg2:#16161A;--bg3:#1E1E24;--bg4:#26262E;
+  --border:#2A2A34;--border2:#3A3A48;
+  --text:#E8E6E0;--text2:#A0A0A0;--text3:#6A6A74;
+  --flame:#E85A2A;--flame-dim:#E85A2A20;--flame-glow:#E85A2A40;
+  --sage:#3CB371;--sage-dim:#3CB37118;
+  --sky:#4A9EE8;--sky-dim:#4A9EE818;
+  --gold:#E8A832;--gold-dim:#E8A83218;
+  --red:#E84040;--red-dim:#E8404018;
+  --plum:#9060D0;--plum-dim:#9060D018;
+  --radius:10px;
+  --tg-bg:var(--bg);--tg-text:var(--text);
+}
+html,body{
+  background:var(--tg-bg);color:var(--tg-text);
+  font-family:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;
+  font-size:14px;line-height:1.45;
+  min-height:100vh;-webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+/* ── Layout ── */
+.app{max-width:480px;margin:0 auto;padding:0 0 5rem}
+.section{padding:0 1rem;margin-bottom:1.25rem}
+.section-label{
+  font-size:.65rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--text3);margin-bottom:.5rem;padding-left:.125rem;
+}
+
+/* ── Status Bar ── */
+.status-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.6rem 1rem;background:var(--bg2);
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;
+}
+.status-bar .logo{font-weight:800;font-size:.85rem;letter-spacing:-.02em}
+.status-bar .logo span{color:var(--flame)}
+.conn-dot{
+  width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:.35rem;
+}
+.conn-dot.live{background:var(--sage);box-shadow:0 0 6px var(--sage)}
+.conn-dot.offline{background:var(--red)}
+.conn-label{font-size:.65rem;color:var(--text2);font-weight:600}
+
+/* ── Buffer Meter ── */
+.buffer-strip{
+  display:flex;gap:1px;padding:.5rem 1rem;background:var(--bg);
+}
+.buffer-cell{
+  flex:1;height:32px;border-radius:4px;display:flex;align-items:center;justify-content:center;
+  font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  transition:all .3s;position:relative;overflow:hidden;
+}
+.buffer-cell.posted{background:var(--sage-dim);color:var(--sage);border:1px solid var(--sage)}
+.buffer-cell.ready{background:var(--sky-dim);color:var(--sky);border:1px solid var(--sky)}
+.buffer-cell.empty{background:var(--red-dim);color:var(--red);border:1px dashed var(--border2)}
+.buffer-cell.today{border:2px solid var(--flame);box-shadow:0 0 8px var(--flame-glow)}
+.buffer-cell .day-label{font-size:.5rem;line-height:1}
+.buffer-cell .count{font-size:.7rem;font-weight:800}
+
+/* ── Stat Tiles ── */
+.stat-row{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;
+  padding:0 1rem;margin-bottom:1.25rem;
+}
+.stat-tile{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:.6rem .5rem;text-align:center;
+}
+.stat-tile .val{
+  font-size:1.35rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1;
+}
+.stat-tile .label{font-size:.55rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-top:.1rem}
+.stat-tile.flame .val{color:var(--flame)}
+.stat-tile.sage .val{color:var(--sage)}
+.stat-tile.sky .val{color:var(--sky)}
+.stat-tile.gold .val{color:var(--gold)}
+
+/* ── Today Cards ── */
+.today-cards{display:flex;flex-direction:column;gap:.5rem}
+.slot-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:.75rem .85rem;display:flex;align-items:center;gap:.75rem;
+  transition:all .2s;
+}
+.slot-card:active{transform:scale(.98);background:var(--bg3)}
+.slot-time{
+  min-width:3.2rem;text-align:center;
+}
+.slot-time .t{font-size:.95rem;font-weight:800;font-variant-numeric:tabular-nums}
+.slot-time .ampm{font-size:.5rem;text-transform:uppercase;color:var(--text3);font-weight:700;letter-spacing:.06em}
+.slot-info{flex:1;min-width:0}
+.slot-info .icon-name{font-size:.85rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot-info .meta{font-size:.65rem;color:var(--text2)}
+.slot-status{flex-shrink:0}
+.pill{
+  font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  padding:.2rem .5rem;border-radius:3px;white-space:nowrap;
+}
+.pill.posted{color:var(--sage);background:var(--sage-dim)}
+.pill.ready{color:var(--sky);background:var(--sky-dim)}
+.pill.empty{color:var(--red);background:var(--red-dim)}
+.pill.live{color:var(--flame);background:var(--flame-dim);animation:pulse-pill 2s ease infinite}
+@keyframes pulse-pill{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* ── Calendar Grid ── */
+.cal-grid{
+  display:grid;grid-template-columns:auto repeat(7,1fr);gap:1px;
+  background:var(--border);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;font-size:.65rem;
+}
+.cal-grid>div{background:var(--bg2);padding:.4rem .3rem;text-align:center}
+.cal-grid .ch{
+  font-weight:700;font-size:.5rem;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--text3);background:var(--bg3);
+}
+.cal-grid .rl{
+  font-weight:600;color:var(--text3);text-align:right;padding-right:.4rem;
+  background:var(--bg3);font-size:.5rem;
+}
+.cal-grid .f{color:var(--sage);font-weight:600}
+.cal-grid .e{color:var(--text3);font-style:italic;font-size:.55rem}
+.cal-grid .s{color:var(--gold);font-weight:700}
+.cal-grid .t{border:1px solid var(--flame);border-radius:3px}
+
+/* ── Pipeline ── */
+.pipeline{display:flex;gap:2px;overflow-x:auto;padding-bottom:.25rem}
+.pipe-step{
+  flex:1;min-width:0;background:var(--bg2);border:1px solid var(--border);
+  padding:.5rem .25rem;text-align:center;border-radius:4px;
+  transition:all .2s;
+}
+.pipe-step:first-child{border-radius:var(--radius) 4px 4px var(--radius)}
+.pipe-step:last-child{border-radius:4px var(--radius) var(--radius) 4px}
+.pipe-step .p-num{font-size:1.1rem;font-weight:800;font-variant-numeric:tabular-nums}
+.pipe-step .p-label{font-size:.45rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:700;margin-top:.1rem}
+.pipe-step.active{border-color:var(--flame);background:var(--flame-dim)}
+.pipe-step.active .p-num{color:var(--flame)}
+.pipe-step.done .p-num{color:var(--sage)}
+
+/* ── Actions ── */
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.action-btn{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:.75rem;text-align:center;cursor:pointer;
+  transition:all .15s;-webkit-tap-highlight-color:transparent;
+  text-decoration:none;color:inherit;display:block;
+}
+.action-btn:active{transform:scale(.96);background:var(--bg3)}
+.action-btn .a-icon{font-size:1.3rem;margin-bottom:.25rem}
+.action-btn .a-label{font-size:.7rem;font-weight:700}
+.action-btn .a-sub{font-size:.55rem;color:var(--text3);margin-top:.1rem}
+.action-btn.primary{border-color:var(--flame);background:var(--flame-dim)}
+.action-btn.primary .a-label{color:var(--flame)}
+
+/* ── Feed ── */
+.feed{display:flex;flex-direction:column;gap:.35rem}
+.feed-item{
+  display:flex;align-items:flex-start;gap:.6rem;
+  padding:.5rem .65rem;background:var(--bg2);border-radius:6px;
+  border-left:3px solid var(--border);
+}
+.feed-item.success{border-left-color:var(--sage)}
+.feed-item.warning{border-left-color:var(--gold)}
+.feed-item.error{border-left-color:var(--red)}
+.feed-item.info{border-left-color:var(--sky)}
+.feed-time{font-size:.55rem;color:var(--text3);min-width:3rem;font-variant-numeric:tabular-nums;padding-top:.1rem}
+.feed-body{flex:1;min-width:0}
+.feed-body .fb-title{font-size:.72rem;font-weight:600}
+.feed-body .fb-detail{font-size:.6rem;color:var(--text2);margin-top:.05rem}
+
+/* ── Approval Card ── */
+.approval-card{
+  background:var(--bg2);border:1px solid var(--flame);border-radius:var(--radius);
+  overflow:hidden;
+}
+.approval-card .ac-header{
+  padding:.6rem .85rem;display:flex;justify-content:space-between;align-items:center;
+  background:var(--flame-dim);
+}
+.approval-card .ac-header h3{font-size:.8rem;font-weight:700;color:var(--flame)}
+.approval-card .ac-body{padding:.75rem .85rem}
+.approval-card .ac-body p{font-size:.72rem;color:var(--text2);margin-bottom:.5rem}
+.approval-actions{display:flex;gap:.5rem}
+.btn{
+  flex:1;padding:.55rem;border:none;border-radius:6px;font-size:.72rem;
+  font-weight:700;cursor:pointer;transition:all .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:active{transform:scale(.96)}
+.btn.approve{background:var(--sage);color:#fff}
+.btn.reject{background:var(--bg4);color:var(--text2);border:1px solid var(--border2)}
+
+/* ── Bottom Nav ── */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--bg2);border-top:1px solid var(--border);
+  display:flex;justify-content:center;gap:0;
+  padding:.4rem 0;padding-bottom:max(.4rem,env(safe-area-inset-bottom));
+  z-index:100;
+}
+.nav-item{
+  flex:1;max-width:5rem;text-align:center;padding:.25rem 0;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:color .15s;color:var(--text3);
+}
+.nav-item.active{color:var(--flame)}
+.nav-item .nav-icon{font-size:1.1rem}
+.nav-item .nav-label{font-size:.5rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-top:.1rem}
+
+/* ── Tab content ── */
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* ── Countdown ── */
+.countdown{
+  text-align:center;padding:1rem;background:var(--bg2);
+  border-bottom:1px solid var(--border);
+}
+.countdown .cd-label{font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-weight:700}
+.countdown .cd-time{font-size:1.8rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--flame);margin:.15rem 0}
+.countdown .cd-what{font-size:.72rem;color:var(--text2);font-weight:600}
+
+/* ── Scroll ── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="logo">🌶️ Insta <span>Garam</span></div>
+    <div style="display:flex;align-items:center">
+      <span class="conn-dot" id="connDot"></span>
+      <span class="conn-label" id="connLabel">Connecting...</span>
+    </div>
+  </div>
+
+  <!-- Countdown -->
+  <div class="countdown" id="countdown">
+    <div class="cd-label">Next Post In</div>
+    <div class="cd-time" id="cdTime">--:--:--</div>
+    <div class="cd-what" id="cdWhat">Loading...</div>
+  </div>
+
+  <!-- Tab: Dashboard -->
+  <div class="tab-content active" id="tab-dashboard">
+    <!-- Buffer Strip -->
+    <div class="buffer-strip" id="bufferStrip"></div>
+
+    <!-- Stats -->
+    <div class="stat-row" id="statRow">
+      <div class="stat-tile sage"><div class="val" id="stPosted">-</div><div class="label">Posted</div></div>
+      <div class="stat-tile sky"><div class="val" id="stReady">-</div><div class="label">Ready</div></div>
+      <div class="stat-tile flame"><div class="val" id="stRunway">-</div><div class="label">Days Left</div></div>
+      <div class="stat-tile gold"><div class="val" id="stFollowers">-</div><div class="label">Followers</div></div>
+    </div>
+
+    <!-- Today -->
+    <div class="section">
+      <div class="section-label">Today's Schedule</div>
+      <div class="today-cards" id="todayCards"></div>
+    </div>
+
+    <!-- Approval Queue -->
+    <div class="section" id="approvalSection" style="display:none">
+      <div class="section-label">⚡ Awaiting Your Approval</div>
+      <div id="approvalQueue"></div>
+    </div>
+
+    <!-- Feed -->
+    <div class="section">
+      <div class="section-label">Recent Activity</div>
+      <div class="feed" id="activityFeed"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Calendar -->
+  <div class="tab-content" id="tab-calendar">
+    <div class="section" style="margin-top:1rem">
+      <div class="section-label">7-Day Content Calendar</div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+    <div class="section" style="margin-top:1.25rem">
+      <div class="section-label">Content Pipeline</div>
+      <div class="pipeline" id="pipelineView"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Actions -->
+  <div class="tab-content" id="tab-actions">
+    <div class="section" style="margin-top:1rem">
+      <div class="section-label">Quick Actions</div>
+      <div class="action-grid">
+        <a class="action-btn primary" id="btnClaude" href="https://claude.ai/code" target="_blank">
+          <div class="a-icon">🤖</div>
+          <div class="a-label">Launch Claude</div>
+          <div class="a-sub">Open operator session</div>
+        </a>
+        <div class="action-btn" id="btnPostNow" onclick="postNow()">
+          <div class="a-icon">🚀</div>
+          <div class="a-label">Post Now</div>
+          <div class="a-sub">Force next scheduled</div>
+        </div>
+        <div class="action-btn" id="btnDVRI" onclick="runDVRI()">
+          <div class="a-icon">🔥</div>
+          <div class="a-label">DVRI Scan</div>
+          <div class="a-sub">Daily viral intel</div>
+        </div>
+        <div class="action-btn" id="btnBatch" onclick="batchPlan()">
+          <div class="a-icon">📋</div>
+          <div class="a-label">Batch Plan</div>
+          <div class="a-sub">Sunday content sprint</div>
+        </div>
+        <div class="action-btn" id="btnRefresh" onclick="refreshAll()">
+          <div class="a-icon">🔄</div>
+          <div class="a-label">Refresh Data</div>
+          <div class="a-sub">Pull latest state</div>
+        </div>
+        <a class="action-btn" href="https://www.instagram.com/instagaram.studio/" target="_blank">
+          <div class="a-icon">📸</div>
+          <div class="a-label">View Profile</div>
+          <div class="a-sub">Open Instagram</div>
+        </a>
+        <a class="action-btn" href="agents.html" style="border-color:var(--creative);background:rgba(166,108,255,.12)">
+          <div class="a-icon">🗺️</div>
+          <div class="a-label" style="color:var(--creative)">Agent Map</div>
+          <div class="a-sub">Constellation view</div>
+        </a>
+        <a class="action-btn" href="https://github.com/amitbtare-bot/instagaram-autoposter/actions" target="_blank">
+          <div class="a-icon">⚙️</div>
+          <div class="a-label">GitHub Actions</div>
+          <div class="a-sub">Autoposter runs</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Scratchpad -->
+    <div class="section" style="margin-top:1.25rem">
+      <div class="section-label">CEO Scratchpad</div>
+      <textarea id="scratchpad" placeholder="Drop ideas here... reviewed nightly by agent team"
+        style="width:100%;min-height:100px;background:var(--bg2);border:1px solid var(--border);
+        border-radius:var(--radius);padding:.75rem;color:var(--text);font-family:inherit;
+        font-size:.78rem;resize:vertical;outline:none" oninput="saveScratchpad()"></textarea>
+      <div style="font-size:.55rem;color:var(--text3);margin-top:.25rem;text-align:right" id="scratchStatus">Saved</div>
+    </div>
+  </div>
+
+  <!-- Tab: Analytics -->
+  <div class="tab-content" id="tab-analytics">
+    <div class="section" style="margin-top:1rem">
+      <div class="section-label">Recent Posts Performance</div>
+      <div id="postsPerf" class="feed"></div>
+    </div>
+    <div class="section" style="margin-top:1.25rem">
+      <div class="section-label">System Services</div>
+      <div id="servicesList" class="feed"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <div class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
+    <div class="nav-icon">📊</div><div class="nav-label">Home</div>
+  </div>
+  <div class="nav-item" data-tab="calendar" onclick="switchTab('calendar')">
+    <div class="nav-icon">📅</div><div class="nav-label">Calendar</div>
+  </div>
+  <div class="nav-item" data-tab="actions" onclick="switchTab('actions')">
+    <div class="nav-icon">⚡</div><div class="nav-label">Actions</div>
+  </div>
+  <div class="nav-item" data-tab="analytics" onclick="switchTab('analytics')">
+    <div class="nav-icon">📈</div><div class="nav-label">Analytics</div>
+  </div>
+</div>
+
+<script>
+// ─── Config ───
+// Auto-detect: if served by ceo_server.py, API = same origin; if opened as file, skip API
+const API_BASE = (window.location.protocol === 'file:') ? '' : window.location.origin;
+const GITHUB_RAW = 'https://raw.githubusercontent.com/amitbtare-bot/instagaram-autoposter/main/scheduled_posts.json';
+let STATE = { posts: [], connected: false, lastUpdate: null };
+let scratchTimer = null;
+
+// ─── Embedded fallback data (from actual scheduled_posts.json) ───
+const FALLBACK_POSTS = [
+  {id:"ronaldo_filmcrew_v1",icon:"Cristiano Ronaldo",scheduled_time_ist:"2026-08-03T12:00:00+05:30",status:"posted",permalink:"https://www.instagram.com/reel/DbjVxHejxuv/"},
+  {id:"kohli_filmcrew_v1",icon:"Virat Kohli",scheduled_time_ist:"2026-08-09T23:50:00+05:30",status:"posted",permalink:"https://www.instagram.com/reel/Db1EWktkadw/"},
+  {id:"gti_ep1_bhagatsingh",icon:"Bhagat Singh",series:"Guess the Icon",episode:1,scheduled_time_ist:"2026-08-10T08:38:00+05:30",status:"posted",permalink:"https://www.instagram.com/reel/Db2Ak3ugYAR/"},
+  {id:"gti_ep2_bose",icon:"Subhas Chandra Bose",series:"Guess the Icon",episode:2,scheduled_time_ist:"2026-08-11T07:00:00+05:30",status:"posted",permalink:"https://www.instagram.com/reel/Db4qgIUFRHw/"},
+  {id:"gti_ep3_laxmibai",icon:"Rani Laxmibai",series:"Guess the Icon",episode:3,scheduled_time_ist:"2026-08-12T07:00:00+05:30",status:"uploaded"},
+  {id:"gti_ep4_kalam",icon:"APJ Abdul Kalam",series:"Guess the Icon",episode:4,scheduled_time_ist:"2026-08-13T07:00:00+05:30",status:"uploaded"},
+  {id:"gti_ep5_gandhi",icon:"Mahatma Gandhi",series:"Guess the Icon",episode:5,scheduled_time_ist:"2026-08-14T07:00:00+05:30",status:"uploaded"},
+  {id:"independence_day_megareel",icon:"Independence Day 2026",series:"Guess the Icon",episode:"SPECIAL",scheduled_time_ist:"2026-08-15T07:00:00+05:30",status:"uploaded"},
+  {id:"ep1_7pm_netflix_bose",icon:"Netaji Bose — Netflix",series:"7PM Slot",scheduled_time_ist:"2026-08-11T19:00:00+05:30",status:"uploaded"},
+];
+
+// ─── Init ───
+document.addEventListener('DOMContentLoaded', async () => {
+  // Telegram WebApp integration
+  if (window.Telegram?.WebApp) {
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+    document.documentElement.style.setProperty('--tg-bg', tg.themeParams.bg_color || '#0D0D0F');
+    document.documentElement.style.setProperty('--tg-text', tg.themeParams.text_color || '#E8E6E0');
+  }
+  await loadData();
+  setInterval(loadData, 30000); // Poll every 30s
+  setInterval(updateCountdown, 1000);
+});
+
+// ─── Data Loading ───
+async function loadData() {
+  try {
+    const resp = await fetch(API_BASE + '/api/overview', { signal: AbortSignal.timeout(5000) });
+    if (!resp.ok) throw new Error('API error');
+    const data = await resp.json();
+    STATE.posts = data.posts || FALLBACK_POSTS;
+    STATE.connected = true;
+    STATE.lastUpdate = Date.now();
+    STATE.stats = data.stats;
+    STATE.pending = data.pending;
+    STATE.services = data.services;
+    STATE.reels = data.reels;
+  } catch {
+    // Try GitHub raw (works if repo is public, otherwise use fallback)
+    try {
+      const resp = await fetch(GITHUB_RAW, { signal: AbortSignal.timeout(5000) });
+      if (resp.ok) {
+        STATE.posts = await resp.json();
+        STATE.connected = false;
+        STATE.lastUpdate = Date.now();
+      }
+    } catch {
+      if (!STATE.posts.length) STATE.posts = FALLBACK_POSTS;
+      STATE.connected = false;
+    }
+  }
+  render();
+}
+
+// ─── Render Everything ───
+function render() {
+  renderConnection();
+  renderBufferStrip();
+  renderStats();
+  renderToday();
+  renderCalendar();
+  renderPipeline();
+  renderFeed();
+  renderApprovals();
+  renderAnalytics();
+}
+
+function renderConnection() {
+  const dot = document.getElementById('connDot');
+  const label = document.getElementById('connLabel');
+  if (STATE.connected) {
+    dot.className = 'conn-dot live';
+    label.textContent = 'Live';
+  } else {
+    dot.className = 'conn-dot offline';
+    label.textContent = STATE.lastUpdate ? 'Cached' : 'Offline';
+  }
+}
+
+function renderBufferStrip() {
+  const strip = document.getElementById('bufferStrip');
+  const now = new Date();
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + i);
+    const dayStr = d.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 2);
+    const dateNum = d.getDate();
+    const month = d.getMonth();
+    const year = d.getFullYear();
+    // Count slots for this day
+    const dayPosts = STATE.posts.filter(p => {
+      const pt = new Date(p.scheduled_time_ist);
+      return pt.getDate() === dateNum && pt.getMonth() === month && pt.getFullYear() === year;
+    });
+    const ready = dayPosts.filter(p => p.status === 'uploaded' || p.status === 'posted').length;
+    days.push({ dayStr, dateNum, ready, isToday: i === 0 });
+  }
+  strip.innerHTML = days.map(d => `
+    <div class="buffer-cell ${d.ready >= 2 ? 'ready' : d.ready === 1 ? 'ready' : 'empty'} ${d.isToday ? 'today' : ''}">
+      <div><div class="day-label">${d.dayStr}</div><div class="count">${d.ready}/2</div></div>
+    </div>
+  `).join('');
+}
+
+function renderStats() {
+  const posted = STATE.posts.filter(p => p.status === 'posted').length;
+  const ready = STATE.posts.filter(p => p.status === 'uploaded').length;
+  // Calculate runway: days from today with at least 1 ready post
+  const now = new Date();
+  let runway = 0;
+  for (let i = 1; i <= 14; i++) {
+    const d = new Date(now); d.setDate(d.getDate() + i);
+    const has = STATE.posts.some(p => {
+      if (p.status !== 'uploaded') return false;
+      const pt = new Date(p.scheduled_time_ist);
+      return pt.getDate() === d.getDate() && pt.getMonth() === d.getMonth();
+    });
+    if (has) runway++; else break;
+  }
+  document.getElementById('stPosted').textContent = posted;
+  document.getElementById('stReady').textContent = ready;
+  document.getElementById('stRunway').textContent = runway;
+  document.getElementById('stFollowers').textContent = STATE.stats?.followers || '—';
+}
+
+function renderToday() {
+  const container = document.getElementById('todayCards');
+  const now = new Date();
+  const todayPosts = STATE.posts.filter(p => {
+    const pt = new Date(p.scheduled_time_ist);
+    return pt.getDate() === now.getDate() && pt.getMonth() === now.getMonth() && pt.getFullYear() === now.getFullYear();
+  }).sort((a, b) => new Date(a.scheduled_time_ist) - new Date(b.scheduled_time_ist));
+
+  if (!todayPosts.length) {
+    container.innerHTML = '<div class="slot-card"><div class="slot-info"><span class="icon-name" style="color:var(--text3)">No posts scheduled today</span></div></div>';
+    return;
+  }
+
+  container.innerHTML = todayPosts.map(p => {
+    const t = new Date(p.scheduled_time_ist);
+    const hrs = t.getHours();
+    const h12 = hrs % 12 || 12;
+    const ampm = hrs < 12 ? 'AM' : 'PM';
+    const isPast = now > t;
+    const status = p.status === 'posted' ? 'posted' : (isPast && p.status === 'uploaded' ? 'live' : p.status === 'uploaded' ? 'ready' : 'empty');
+    const statusLabel = p.status === 'posted' ? '✓ Posted' : (isPast && p.status === 'uploaded' ? '● Due Now' : p.status === 'uploaded' ? 'Ready' : 'Missing');
+    const series = p.series ? `${p.series} ${p.episode ? 'Ep ' + p.episode : ''}` : '';
+    return `
+      <div class="slot-card" ${p.permalink ? `onclick="window.open('${p.permalink}','_blank')"` : ''}>
+        <div class="slot-time"><div class="t">${h12}</div><div class="ampm">${ampm} IST</div></div>
+        <div class="slot-info">
+          <div class="icon-name">${p.icon}</div>
+          <div class="meta">${series}</div>
+        </div>
+        <div class="slot-status"><span class="pill ${status}">${statusLabel}</span></div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCalendar() {
+  const grid = document.getElementById('calGrid');
+  const now = new Date();
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(now); d.setDate(d.getDate() + i);
+    days.push(d);
+  }
+
+  let html = '<div class="ch"></div>';
+  days.forEach((d, i) => {
+    const name = d.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3);
+    const num = d.getDate();
+    html += `<div class="ch ${i === 0 ? 't' : ''}">${name} ${num}</div>`;
+  });
+
+  ['7 AM', '7 PM'].forEach(slot => {
+    html += `<div class="rl">${slot}</div>`;
+    days.forEach((d, i) => {
+      const isAM = slot === '7 AM';
+      const targetHour = isAM ? 7 : 19;
+      const match = STATE.posts.find(p => {
+        const pt = new Date(p.scheduled_time_ist);
+        return pt.getDate() === d.getDate() && pt.getMonth() === d.getMonth() &&
+               Math.abs(pt.getHours() - targetHour) <= 1;
+      });
+      if (match) {
+        const cls = match.status === 'posted' ? 'f' : (match.episode === 'SPECIAL' ? 's' : 'f');
+        const shortName = match.icon.split(' ').pop().slice(0, 6);
+        html += `<div class="${cls} ${i === 0 ? 't' : ''}">${shortName}</div>`;
+      } else {
+        html += `<div class="e ${i === 0 ? 't' : ''}">—</div>`;
+      }
+    });
+  });
+
+  grid.innerHTML = html;
+}
+
+function renderPipeline() {
+  const el = document.getElementById('pipelineView');
+  const stages = [
+    { label: 'Package', count: 0 },
+    { label: 'QA', count: 0 },
+    { label: 'Video', count: 0 },
+    { label: 'FFmpeg', count: 0 },
+    { label: 'CVI', count: 0 },
+    { label: 'QC', count: 0 },
+    { label: 'Approved', count: STATE.posts.filter(p => p.status === 'uploaded').length },
+    { label: 'Posted', count: STATE.posts.filter(p => p.status === 'posted').length },
+  ];
+  // If backend provides pipeline data, use it
+  if (STATE.stats?.pipeline) Object.assign(stages, STATE.stats.pipeline);
+
+  el.innerHTML = stages.map((s, i) => {
+    const cls = s.count > 0 ? (i >= 6 ? 'done' : 'active') : '';
+    return `<div class="pipe-step ${cls}"><div class="p-num">${s.count}</div><div class="p-label">${s.label}</div></div>`;
+  }).join('');
+}
+
+function renderFeed() {
+  const feed = document.getElementById('activityFeed');
+  const items = [];
+  // Build feed from posts
+  const sortedPosts = [...STATE.posts]
+    .filter(p => p.status === 'posted' && p.posted_at)
+    .sort((a, b) => new Date(b.posted_at) - new Date(a.posted_at))
+    .slice(0, 5);
+
+  sortedPosts.forEach(p => {
+    const t = new Date(p.posted_at);
+    items.push({
+      type: 'success',
+      time: t.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+      title: `${p.icon} posted`,
+      detail: p.permalink ? `→ ${p.permalink.split('/').slice(-2, -1)}` : p.series || '',
+    });
+  });
+
+  // Add system events
+  const upcoming = STATE.posts
+    .filter(p => p.status === 'uploaded')
+    .sort((a, b) => new Date(a.scheduled_time_ist) - new Date(b.scheduled_time_ist));
+  if (upcoming.length) {
+    const next = upcoming[0];
+    const nt = new Date(next.scheduled_time_ist);
+    items.unshift({
+      type: 'info',
+      time: nt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+      title: `Next: ${next.icon}`,
+      detail: `Autoposter will publish at scheduled time`,
+    });
+  }
+
+  if (!items.length) {
+    feed.innerHTML = '<div class="feed-item info"><div class="feed-body"><div class="fb-title" style="color:var(--text3)">No recent activity</div></div></div>';
+    return;
+  }
+
+  feed.innerHTML = items.map(i => `
+    <div class="feed-item ${i.type}">
+      <div class="feed-time">${i.time}</div>
+      <div class="feed-body">
+        <div class="fb-title">${i.title}</div>
+        <div class="fb-detail">${i.detail}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderApprovals() {
+  const section = document.getElementById('approvalSection');
+  const queue = document.getElementById('approvalQueue');
+  const pending = STATE.pending || [];
+  if (!pending.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  queue.innerHTML = pending.map(p => `
+    <div class="approval-card" style="margin-bottom:.5rem">
+      <div class="ac-header"><h3>${p.display_name || p.icon}</h3><span class="pill ready">${p.size_mb || '?'}MB</span></div>
+      <div class="ac-body">
+        <p>${p.caption ? p.caption.slice(0, 120) + '...' : 'No caption loaded'}</p>
+        <div class="approval-actions">
+          <button class="btn approve" onclick="approveVideo('${p.icon}')">✓ Approve</button>
+          <button class="btn reject" onclick="rejectVideo('${p.icon}')">✕ Reject</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderAnalytics() {
+  const perf = document.getElementById('postsPerf');
+  const posted = STATE.posts.filter(p => p.status === 'posted').sort((a, b) => new Date(b.posted_at || 0) - new Date(a.posted_at || 0));
+  const reels = STATE.reels || [];
+
+  if (reels.length) {
+    perf.innerHTML = reels.map(r => `
+      <div class="feed-item info">
+        <div class="feed-time">${r.timestamp?.slice(5, 10) || '—'}</div>
+        <div class="feed-body">
+          <div class="fb-title">${(r.caption || '').slice(0, 50)}...</div>
+          <div class="fb-detail">❤️ ${r.like_count || 0} · 💬 ${r.comments_count || 0}</div>
+        </div>
+      </div>
+    `).join('');
+  } else {
+    perf.innerHTML = posted.map(p => `
+      <div class="feed-item success" ${p.permalink ? `onclick="window.open('${p.permalink}','_blank')"` : ''}>
+        <div class="feed-time">${new Date(p.scheduled_time_ist).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+        <div class="feed-body">
+          <div class="fb-title">${p.icon}</div>
+          <div class="fb-detail">${p.series || 'Film Crew'} · ${p.permalink ? 'View →' : 'No link'}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  const services = document.getElementById('servicesList');
+  const svc = STATE.services || {};
+  const svcList = [
+    { name: 'GitHub Actions Autoposter', status: 'online', icon: '⚙️' },
+    { name: 'Cloudinary CDN', status: 'online', icon: '☁️' },
+    { name: 'Instagram Graph API', status: 'online', icon: '📸' },
+    { name: 'Telegram Bot', status: svc.telegram_bot?.status || 'unknown', icon: '🤖' },
+    { name: 'Google Drive Sync', status: 'online', icon: '📁' },
+  ];
+  services.innerHTML = svcList.map(s => `
+    <div class="feed-item ${s.status === 'online' ? 'success' : s.status === 'offline' ? 'error' : 'warning'}">
+      <div class="feed-time">${s.icon}</div>
+      <div class="feed-body">
+        <div class="fb-title">${s.name}</div>
+        <div class="fb-detail" style="text-transform:uppercase;font-weight:700;font-size:.55rem">${s.status}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── Countdown ───
+function updateCountdown() {
+  const now = new Date();
+  const upcoming = STATE.posts
+    .filter(p => p.status === 'uploaded' && new Date(p.scheduled_time_ist) > now)
+    .sort((a, b) => new Date(a.scheduled_time_ist) - new Date(b.scheduled_time_ist));
+
+  if (!upcoming.length) {
+    document.getElementById('cdTime').textContent = '00:00:00';
+    document.getElementById('cdWhat').textContent = 'No upcoming posts';
+    return;
+  }
+
+  const next = upcoming[0];
+  const target = new Date(next.scheduled_time_ist);
+  const diff = Math.max(0, target - now);
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  document.getElementById('cdTime').textContent =
+    `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  document.getElementById('cdWhat').textContent = `${next.icon}`;
+}
+
+// ─── Navigation ───
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.querySelector(`.nav-item[data-tab="${tab}"]`).classList.add('active');
+  if (window.Telegram?.WebApp) window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+}
+
+// ─── Actions ───
+async function approveVideo(icon) {
+  if (!confirm(`Approve ${icon.replace(/_/g, ' ')}?`)) return;
+  try {
+    await fetch(`${API_BASE}/api/approve/${icon}`, { method: 'POST' });
+    if (window.Telegram?.WebApp) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+    loadData();
+  } catch { alert('Cannot approve — backend offline. Use Telegram bot.'); }
+}
+
+async function rejectVideo(icon) {
+  const feedback = prompt('Rejection feedback (optional):');
+  try {
+    await fetch(`${API_BASE}/api/reject/${icon}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feedback }),
+    });
+    loadData();
+  } catch { alert('Cannot reject — backend offline.'); }
+}
+
+async function postNow() {
+  if (!confirm('Force-post the next scheduled reel NOW?')) return;
+  try {
+    await fetch(`${API_BASE}/api/post-now`, { method: 'POST' });
+    if (window.Telegram?.WebApp) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+    loadData();
+  } catch { alert('Cannot force post — backend offline.'); }
+}
+
+function runDVRI() {
+  const url = 'https://claude.ai/code';
+  if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url);
+  else window.open(url, '_blank');
+}
+
+function batchPlan() {
+  const url = 'https://claude.ai/code';
+  if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url);
+  else window.open(url, '_blank');
+}
+
+function refreshAll() {
+  loadData();
+  if (window.Telegram?.WebApp) window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+}
+
+// ─── Scratchpad ───
+function saveScratchpad() {
+  clearTimeout(scratchTimer);
+  document.getElementById('scratchStatus').textContent = 'Saving...';
+  scratchTimer = setTimeout(async () => {
+    const content = document.getElementById('scratchpad').value;
+    try {
+      await fetch(`${API_BASE}/api/scratchpad`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      });
+      document.getElementById('scratchStatus').textContent = 'Saved ✓';
+    } catch {
+      localStorage.setItem('ceo_scratchpad', content);
+      document.getElementById('scratchStatus').textContent = 'Saved locally';
+    }
+  }, 1500);
+}
+
+// Load scratchpad on init
+(async function loadScratchpad() {
+  try {
+    const resp = await fetch(`${API_BASE}/api/scratchpad`);
+    const data = await resp.json();
+    if (data.content) document.getElementById('scratchpad').value = data.content;
+  } catch {
+    const local = localStorage.getItem('ceo_scratchpad');
+    if (local) document.getElementById('scratchpad').value = local;
+  }
+})();
+</script>
+</body>
+</html>
