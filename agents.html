@@ -91,12 +91,26 @@ canvas.hovering{cursor:pointer}
 }
 .skill::before{content:"✓";color:var(--production);font-weight:700;font-size:.65rem}
 
+/* Dept panel extras */
+.dept-agents-list{display:flex;flex-direction:column;gap:.35rem}
+.dept-agent-card{
+  display:flex;align-items:center;gap:.6rem;
+  padding:.5rem .65rem;border-radius:6px;background:#0A0A20;
+  border:1px solid var(--panel-border);cursor:pointer;transition:all .15s;
+}
+.dept-agent-card:hover{border-color:var(--flame);background:var(--flame-dim)}
+.dept-agent-emoji{font-size:1.1rem}
+.dept-agent-info{flex:1}
+.dept-agent-name{font-size:.75rem;font-weight:700;color:var(--text)}
+.dept-agent-role{font-size:.6rem;color:var(--text2)}
+
 /* Legend */
 .legend{
   position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);
   display:flex;gap:1.2rem;padding:.5rem 1.2rem;
   background:rgba(14,14,36,.85);backdrop-filter:blur(10px);
   border:1px solid var(--panel-border);border-radius:8px;z-index:50;
+  flex-wrap:wrap;justify-content:center;
 }
 .legend-item{display:flex;align-items:center;gap:.35rem;cursor:pointer;transition:opacity .2s}
 .legend-item:hover{opacity:.7}
@@ -132,7 +146,8 @@ canvas.hovering{cursor:pointer}
   position:fixed;top:1rem;right:1.5rem;z-index:50;
   text-align:right;
 }
-.stats-overlay .so-num{font-size:2rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--flame);line-height:1}
+.stats-overlay .so-dept{font-size:1.4rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--flame);line-height:1}
+.stats-overlay .so-agent{font-size:2.2rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--text);line-height:1;margin-top:.2rem}
 .stats-overlay .so-label{font-size:.55rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-weight:700}
 </style>
 
@@ -140,12 +155,14 @@ canvas.hovering{cursor:pointer}
 
 <div class="title-bar">
   <h1>🌶️ Insta <span>Garam</span> Studio</h1>
-  <p>AI Agent Constellation — 10 agents, 5 departments</p>
+  <p>Company Brain — 5 departments, 10 agents</p>
   <a href="index.html" class="back-link">← Dashboard</a>
 </div>
 
 <div class="stats-overlay">
-  <div class="so-num">10</div>
+  <div class="so-dept">5</div>
+  <div class="so-label">Departments</div>
+  <div class="so-agent">10</div>
   <div class="so-label">Active Agents</div>
 </div>
 
@@ -168,13 +185,13 @@ canvas.hovering{cursor:pointer}
 </div>
 
 <script>
-// ─── Agent Data ───
+// ─── Department & Agent Data ───
 const DEPTS = {
-  command:    { label: 'Command',    color: '#E85A2A', emoji: '👑' },
-  creative:  { label: 'Creative',   color: '#A66CFF', emoji: '🎨' },
-  production:{ label: 'Production', color: '#4AE88A', emoji: '🔧' },
-  growth:    { label: 'Growth',     color: '#E8D44A', emoji: '📈' },
-  operations:{ label: 'Operations', color: '#4AC8E8', emoji: '⚙️' },
+  command:    { label: 'Command',    color: '#E85A2A', emoji: '🎯', desc: 'Strategy, orchestration & CEO oversight' },
+  creative:  { label: 'Creative',   color: '#A66CFF', emoji: '🎨', desc: 'Content creation, prompts & quality assurance' },
+  production:{ label: 'Production', color: '#4AE88A', emoji: '🔧', desc: 'Video processing, QC & technical pipeline' },
+  growth:    { label: 'Growth',     color: '#E8D44A', emoji: '📈', desc: 'Analytics, marketing & viral intelligence' },
+  operations:{ label: 'Operations', color: '#4AC8E8', emoji: '⚙️', desc: 'Scheduling, planning & community management' },
 };
 
 const AGENTS = [
@@ -222,17 +239,17 @@ const AGENTS = [
   },
   {
     id: 'qa', name: 'QA Agent', emoji: '🔍', dept: 'creative',
-    role: 'Pre-generation quality gate',
+    role: 'Pre-generation quality gate & CVI scoring',
     replaces: { role: 'Creative QA Lead', cost: '₹2-3L/year' },
     ladder: [
       { level: 'Human-Led', desc: 'User proofreads every prompt and caption', current: false },
-      { level: 'Human-Assisted', desc: 'Agent flags issues, user decides whether to fix or proceed', current: true },
-      { level: 'Fully Autonomous', desc: 'Auto-rejects packages below quality threshold, re-routes to Content Director', current: false },
+      { level: 'Human-Assisted', desc: 'Agent flags issues and scores CVI, user decides whether to fix or proceed', current: true },
+      { level: 'Fully Autonomous', desc: 'Auto-rejects packages below CVI 70, re-routes to Content Director', current: false },
     ],
     buildsOn: ['content'],
     breaksInto: [],
-    human: 'QA gate blocks video generation until package passes. User can override for urgent posts.',
-    skills: ['Prompt validation', 'Caption grammar & tone check', 'Hashtag relevance scoring', 'Brand guideline enforcement', 'Bobblehead style compliance'],
+    human: 'QA gate blocks video generation until package passes CVI ≥ 70. User can override for urgent posts.',
+    skills: ['CVI 100-point scoring', 'Prompt validation', 'Caption grammar & tone check', 'Hashtag relevance scoring', 'Brand guideline enforcement'],
   },
   {
     id: 'qc', name: 'QC Agent', emoji: '✅', dept: 'production',
@@ -240,13 +257,13 @@ const AGENTS = [
     replaces: { role: 'Video QC Editor', cost: '₹2-3L/year' },
     ladder: [
       { level: 'Human-Led', desc: 'User watches every video and checks manually', current: false },
-      { level: 'Human-Assisted', desc: 'Agent runs CVI scoring (70+ to pass) and Pappu Express benchmark (30% deviation OK)', current: true },
+      { level: 'Human-Assisted', desc: 'Agent runs technical checks and Pappu Express benchmark (30% deviation OK)', current: true },
       { level: 'Fully Autonomous', desc: 'Auto-routes passing videos to CEO approval, auto-rejects failures with feedback', current: false },
     ],
     buildsOn: [],
     breaksInto: [],
-    human: 'Videos scoring below CVI 70 are flagged. User decides: re-generate, re-process, or override.',
-    skills: ['CVI 100-point scoring', 'Pappu Express benchmarking', 'FFmpeg output validation', 'Video resolution check', 'Watermark verification'],
+    human: 'Videos failing technical checks are flagged. User decides: re-generate, re-process, or override.',
+    skills: ['Pappu Express benchmarking', 'FFmpeg output validation', 'Video resolution & codec check', 'Logo watermark verification', '1080x1920 upscale validation'],
   },
   {
     id: 'analytics', name: 'Analytics Officer', emoji: '📊', dept: 'growth',
@@ -260,16 +277,16 @@ const AGENTS = [
     buildsOn: ['qc'],
     breaksInto: ['viral'],
     human: 'Reviews weekly analytics report in Sunday batch planning session.',
-    skills: ['Instagram Graph API metrics', 'Engagement rate calculation', 'Best posting time analysis', 'Content type performance', 'Follower growth tracking'],
+    skills: ['Instagram Graph API metrics', 'Engagement rate calculation', 'Best posting slot analysis', 'Category performance tracking', 'CVI accuracy calibration'],
   },
   {
     id: 'marketing', name: 'Head of Growth', emoji: '🚀', dept: 'growth',
-    role: 'Hashtags, collaborations & growth tactics',
+    role: 'Hashtags, audience targeting & growth tactics',
     replaces: { role: 'Growth Marketer', cost: '₹3-5L/year' },
     ladder: [
       { level: 'Human-Led', desc: 'User researches hashtags and outreach manually', current: true },
-      { level: 'Human-Assisted', desc: 'Agent generates hashtag strategies and collaboration shortlists', current: false },
-      { level: 'Fully Autonomous', desc: 'Auto-rotates hashtag sets based on performance, sends collab DMs', current: false },
+      { level: 'Human-Assisted', desc: 'Agent generates hashtag strategies and growth experiments', current: false },
+      { level: 'Fully Autonomous', desc: 'Auto-rotates hashtag sets based on performance data', current: false },
     ],
     buildsOn: ['analytics'],
     breaksInto: [],
@@ -288,7 +305,7 @@ const AGENTS = [
     buildsOn: ['analytics', 'marketing'],
     breaksInto: ['content'],
     human: 'Reviews all DM conversations. Comment replies need approval for first 100 followers.',
-    skills: ['Comment response templates', 'DM conversation flows', 'Follower relationship tracking', 'Spam/bot detection', 'Engagement timing optimization'],
+    skills: ['Guess-the-Icon comment game', 'Comment response templates', 'DM conversation flows', 'Engagement loop optimization', 'Spam/bot detection'],
   },
   {
     id: 'planner', name: 'Strategic Planner', emoji: '📋', dept: 'operations',
@@ -320,18 +337,14 @@ const AGENTS = [
   },
 ];
 
-// ─── Links between agents ───
-const LINKS = [];
+// ─── Build agent-to-agent links ───
+const AGENT_LINKS = [];
 AGENTS.forEach(a => {
-  (a.breaksInto || []).forEach(t => {
-    LINKS.push({ source: a.id, target: t, type: 'breaks' });
-  });
-  (a.buildsOn || []).forEach(t => {
-    LINKS.push({ source: t, target: a.id, type: 'builds' });
-  });
+  (a.breaksInto || []).forEach(t => { AGENT_LINKS.push({ source: a.id, target: t }); });
+  (a.buildsOn || []).forEach(t => { AGENT_LINKS.push({ source: t, target: a.id }); });
 });
 
-// ─── Canvas Setup ───
+// ─── Build hierarchical nodes: Brain → Departments → Agents ───
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 let W, H, dpr;
@@ -363,70 +376,120 @@ for (let i = 0; i < 300; i++) {
   });
 }
 
-// ─── Physics Simulation ───
-const nodes = AGENTS.map((a, i) => {
-  // Position by department cluster
-  const deptPositions = {
-    command:    { cx: 0, cy: -120 },
-    creative:  { cx: -200, cy: -30 },
-    production:{ cx: 200, cy: -30 },
-    growth:    { cx: -130, cy: 150 },
-    operations:{ cx: 130, cy: 150 },
-  };
-  const dp = deptPositions[a.dept];
+// ─── Node Hierarchy ───
+
+// Brain node (center)
+const brainNode = {
+  id: '_brain', type: 'brain', name: 'Insta Garam Studio', emoji: '🧠',
+  role: 'The Company Brain — learns, adapts & evolves with every cycle', color: '#E85A2A',
+  x: 0, y: 0, vx: 0, vy: 0, radius: 42, fixed: true,
+};
+
+// Department hub nodes (orbit the brain)
+const deptAngles = { command: -Math.PI/2, creative: -Math.PI/2 - 1.257, production: -Math.PI/2 + 1.257, growth: Math.PI/2 + 0.628, operations: Math.PI/2 - 0.628 };
+const DEPT_ORBIT = 200;
+const deptNodes = Object.entries(DEPTS).map(([key, d]) => {
+  const angle = deptAngles[key];
   return {
-    ...a,
-    x: dp.cx + (Math.random() - 0.5) * 100,
-    y: dp.cy + (Math.random() - 0.5) * 80,
-    vx: 0, vy: 0,
-    radius: a.id === 'ceo' ? 28 : 20,
-    color: DEPTS[a.dept].color,
+    id: '_dept_' + key, type: 'dept', deptKey: key,
+    name: d.label, emoji: d.emoji, role: d.desc, color: d.color,
+    x: Math.cos(angle) * DEPT_ORBIT,
+    y: Math.sin(angle) * DEPT_ORBIT,
+    vx: 0, vy: 0, radius: 28, targetAngle: angle,
   };
 });
 
-const nodeMap = {};
-nodes.forEach(n => nodeMap[n.id] = n);
+// Agent nodes (orbit their department hub)
+const AGENT_ORBIT = 110;
+const agentNodes = AGENTS.map(a => {
+  const deptHub = deptNodes.find(d => d.deptKey === a.dept);
+  const siblings = AGENTS.filter(x => x.dept === a.dept);
+  const idx = siblings.indexOf(a);
+  const count = siblings.length;
+  const angleSpread = Math.PI * 0.8;
+  const baseAngle = deptHub.targetAngle;
+  const angle = baseAngle + (idx - (count - 1) / 2) * (angleSpread / Math.max(count - 1, 1));
+  return {
+    ...a,
+    type: 'agent',
+    x: deptHub.x + Math.cos(angle) * AGENT_ORBIT,
+    y: deptHub.y + Math.sin(angle) * AGENT_ORBIT,
+    vx: 0, vy: 0,
+    radius: 18,
+    color: DEPTS[a.dept].color,
+    parentDept: deptHub.id,
+    targetAngle: angle,
+  };
+});
 
+// All nodes combined
+const allNodes = [brainNode, ...deptNodes, ...agentNodes];
+const nodeMap = {};
+allNodes.forEach(n => nodeMap[n.id] = n);
+
+// ─── Links: Brain→Dept, Dept→Agent, Agent→Agent ───
+const LINKS = [];
+// Brain to each department
+deptNodes.forEach(d => {
+  LINKS.push({ source: '_brain', target: d.id, type: 'hierarchy', weight: 3 });
+});
+// Department to its agents
+agentNodes.forEach(a => {
+  LINKS.push({ source: a.parentDept, target: a.id, type: 'hierarchy', weight: 2 });
+});
+// Agent-to-agent cross-links
+AGENT_LINKS.forEach(l => {
+  LINKS.push({ source: l.source, target: l.target, type: 'cross', weight: 1 });
+});
+
+// ─── Physics ───
 function simulate() {
-  // Repulsion
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      let dx = nodes[j].x - nodes[i].x;
-      let dy = nodes[j].y - nodes[i].y;
+  // Repulsion between all nodes
+  for (let i = 0; i < allNodes.length; i++) {
+    if (allNodes[i].fixed) continue;
+    for (let j = i + 1; j < allNodes.length; j++) {
+      if (allNodes[j].fixed) continue;
+      let dx = allNodes[j].x - allNodes[i].x;
+      let dy = allNodes[j].y - allNodes[i].y;
       let d = Math.sqrt(dx * dx + dy * dy) || 1;
-      let f = 8000 / (d * d);
-      let fx = (dx / d) * f;
-      let fy = (dy / d) * f;
-      nodes[i].vx -= fx; nodes[i].vy -= fy;
-      nodes[j].vx += fx; nodes[j].vy += fy;
+      let minDist = (allNodes[i].radius + allNodes[j].radius) * 2.5;
+      if (d < minDist) {
+        let f = (minDist - d) * 0.15;
+        let fx = (dx / d) * f;
+        let fy = (dy / d) * f;
+        allNodes[i].vx -= fx; allNodes[i].vy -= fy;
+        allNodes[j].vx += fx; allNodes[j].vy += fy;
+      }
     }
   }
-  // Link attraction
-  LINKS.forEach(l => {
-    const a = nodeMap[l.source], b = nodeMap[l.target];
-    if (!a || !b) return;
-    let dx = b.x - a.x, dy = b.y - a.y;
-    let d = Math.sqrt(dx * dx + dy * dy) || 1;
-    let f = (d - 120) * 0.01;
-    let fx = (dx / d) * f, fy = (dy / d) * f;
-    a.vx += fx; a.vy += fy;
-    b.vx -= fx; b.vy -= fy;
+
+  // Dept nodes orbit brain
+  deptNodes.forEach(n => {
+    const tx = Math.cos(n.targetAngle) * DEPT_ORBIT;
+    const ty = Math.sin(n.targetAngle) * DEPT_ORBIT;
+    n.vx += (tx - n.x) * 0.04;
+    n.vy += (ty - n.y) * 0.04;
   });
-  // Department clustering
-  nodes.forEach(n => {
-    const dp = { command:{cx:0,cy:-150}, creative:{cx:-250,cy:-20}, production:{cx:250,cy:-20}, growth:{cx:-160,cy:180}, operations:{cx:160,cy:180} }[n.dept];
-    n.vx += (dp.cx - n.x) * 0.003;
-    n.vy += (dp.cy - n.y) * 0.003;
+
+  // Agent nodes orbit their dept hub
+  agentNodes.forEach(n => {
+    const hub = nodeMap[n.parentDept];
+    const tx = hub.x + Math.cos(n.targetAngle) * AGENT_ORBIT;
+    const ty = hub.y + Math.sin(n.targetAngle) * AGENT_ORBIT;
+    n.vx += (tx - n.x) * 0.03;
+    n.vy += (ty - n.y) * 0.03;
   });
+
   // Damping + update
-  nodes.forEach(n => {
-    n.vx *= 0.85; n.vy *= 0.85;
+  allNodes.forEach(n => {
+    if (n.fixed) return;
+    n.vx *= 0.8; n.vy *= 0.8;
     n.x += n.vx; n.y += n.vy;
   });
 }
 
 // Run initial simulation
-for (let i = 0; i < 200; i++) simulate();
+for (let i = 0; i < 300; i++) simulate();
 
 // ─── Rendering ───
 function worldToScreen(wx, wy) {
@@ -459,75 +522,88 @@ function draw() {
   });
   ctx.globalAlpha = 1;
 
-  // Department labels
-  const deptPos = { command:{x:0,y:-220}, creative:{x:-250,y:-100}, production:{x:250,y:-100}, growth:{x:-160,y:90}, operations:{x:160,y:90} };
-  Object.entries(deptPos).forEach(([key, pos]) => {
-    const p = worldToScreen(pos.x, pos.y);
-    ctx.font = `700 ${Math.max(9, 11 * camZ)}px -apple-system,system-ui,sans-serif`;
-    ctx.fillStyle = DEPTS[key].color + '60';
-    ctx.textAlign = 'center';
-    ctx.letterSpacing = '3px';
-    ctx.fillText(DEPTS[key].label.toUpperCase(), p.x, p.y);
-    ctx.letterSpacing = '0px';
-  });
-
-  // Links
+  // ── Draw links ──
   LINKS.forEach(l => {
     const a = nodeMap[l.source], b = nodeMap[l.target];
     if (!a || !b) return;
     const pa = worldToScreen(a.x, a.y);
     const pb = worldToScreen(b.x, b.y);
 
-    const isHighlight = selectedNode && (selectedNode.id === l.source || selectedNode.id === l.target);
-    const isHoverHL = hoveredNode && (hoveredNode.id === l.source || hoveredNode.id === l.target);
+    const isSelected = selectedNode && (selectedNode.id === l.source || selectedNode.id === l.target);
+    const isHover = hoveredNode && (hoveredNode.id === l.source || hoveredNode.id === l.target);
 
-    ctx.beginPath();
-    ctx.moveTo(pa.x, pa.y);
-    ctx.lineTo(pb.x, pb.y);
-
-    if (isHighlight) {
-      ctx.strokeStyle = a.color + 'AA';
-      ctx.lineWidth = 2 * camZ;
-    } else if (isHoverHL) {
-      ctx.strokeStyle = a.color + '66';
-      ctx.lineWidth = 1.5 * camZ;
-    } else {
-      ctx.strokeStyle = '#FFFFFF15';
-      ctx.lineWidth = 1 * camZ;
-    }
-    ctx.stroke();
-
-    // Animated particles on highlighted links
-    if (isHighlight || isHoverHL) {
-      const t = (tick * 0.015) % 1;
-      const px = pa.x + (pb.x - pa.x) * t;
-      const py = pa.y + (pb.y - pa.y) * t;
+    if (l.type === 'hierarchy') {
+      // Department hierarchy links — thicker, colored
       ctx.beginPath();
-      ctx.arc(px, py, 2 * camZ, 0, Math.PI * 2);
-      ctx.fillStyle = a.color;
-      ctx.fill();
+      ctx.moveTo(pa.x, pa.y);
+      ctx.lineTo(pb.x, pb.y);
+      if (isSelected) {
+        ctx.strokeStyle = b.color + 'CC';
+        ctx.lineWidth = 3 * camZ;
+      } else if (isHover) {
+        ctx.strokeStyle = b.color + '66';
+        ctx.lineWidth = 2 * camZ;
+      } else {
+        ctx.strokeStyle = b.color + '25';
+        ctx.lineWidth = 1.5 * camZ;
+      }
+      ctx.stroke();
+
+      // Animated particles on hierarchy links
+      if (isSelected || isHover) {
+        const t = (tick * 0.012) % 1;
+        const px = pa.x + (pb.x - pa.x) * t;
+        const py = pa.y + (pb.y - pa.y) * t;
+        ctx.beginPath();
+        ctx.arc(px, py, 2.5 * camZ, 0, Math.PI * 2);
+        ctx.fillStyle = b.color;
+        ctx.fill();
+      }
+    } else {
+      // Cross-links — thinner, dashed look
+      ctx.beginPath();
+      ctx.setLineDash([4 * camZ, 4 * camZ]);
+      ctx.moveTo(pa.x, pa.y);
+      ctx.lineTo(pb.x, pb.y);
+      if (isSelected) {
+        ctx.strokeStyle = '#FFFFFF55';
+        ctx.lineWidth = 1.5 * camZ;
+      } else if (isHover) {
+        ctx.strokeStyle = '#FFFFFF33';
+        ctx.lineWidth = 1 * camZ;
+      } else {
+        ctx.strokeStyle = '#FFFFFF0C';
+        ctx.lineWidth = 0.5 * camZ;
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
     }
   });
 
-  // Nodes
-  nodes.forEach(n => {
+  // ── Draw nodes (bottom layer first: agents, then depts, then brain) ──
+  const drawOrder = [...agentNodes, ...deptNodes, brainNode];
+
+  drawOrder.forEach(n => {
     const p = worldToScreen(n.x, n.y);
     const r = n.radius * camZ;
     const isSelected = selectedNode && selectedNode.id === n.id;
     const isHovered = hoveredNode && hoveredNode.id === n.id;
-    const isConnected = selectedNode && (
-      LINKS.some(l => (l.source === selectedNode.id && l.target === n.id) || (l.target === selectedNode.id && l.source === n.id))
+    const isConnected = selectedNode && LINKS.some(l =>
+      (l.source === selectedNode.id && l.target === n.id) ||
+      (l.target === selectedNode.id && l.source === n.id)
     );
     const isDimmed = selectedNode && !isSelected && !isConnected;
 
     // Glow
-    if (isSelected || isHovered) {
-      const glow = ctx.createRadialGradient(p.x, p.y, r * 0.5, p.x, p.y, r * 3);
-      glow.addColorStop(0, n.color + '40');
+    if (isSelected || isHovered || n.type === 'brain') {
+      const glowR = n.type === 'brain' ? r * 4 : r * 3;
+      const glow = ctx.createRadialGradient(p.x, p.y, r * 0.3, p.x, p.y, glowR);
+      const alpha = (isSelected || isHovered) ? '50' : '20';
+      glow.addColorStop(0, n.color + alpha);
       glow.addColorStop(1, n.color + '00');
       ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, r * 3, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -541,34 +617,76 @@ function draw() {
       ctx.stroke();
     }
 
+    // Brain breathing pulse + orbit ring
+    if (n.type === 'brain' && !isDimmed) {
+      // Breathing pulse rings
+      const breathe1 = Math.sin(tick * 0.025) * 0.3 + 0.7;
+      const breathe2 = Math.sin(tick * 0.018 + 1) * 0.2 + 0.5;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, (r + 8 * breathe1) * camZ + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = n.color + Math.round(breathe1 * 40).toString(16).padStart(2, '0');
+      ctx.lineWidth = 1.5 * camZ;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, (r + 18 * breathe2) * camZ + 8, 0, Math.PI * 2);
+      ctx.strokeStyle = n.color + Math.round(breathe2 * 25).toString(16).padStart(2, '0');
+      ctx.lineWidth = 1 * camZ;
+      ctx.stroke();
+
+      // Orbit ring
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, DEPT_ORBIT * camZ, 0, Math.PI * 2);
+      ctx.strokeStyle = '#FFFFFF08';
+      ctx.lineWidth = 1 * camZ;
+      ctx.stroke();
+    }
+
     // Node circle
-    ctx.globalAlpha = isDimmed ? 0.25 : 1;
+    ctx.globalAlpha = isDimmed ? 0.2 : 1;
     ctx.beginPath();
     ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
     const grad = ctx.createRadialGradient(p.x - r * 0.3, p.y - r * 0.3, 0, p.x, p.y, r);
-    grad.addColorStop(0, n.color);
-    grad.addColorStop(1, n.color + 'AA');
+    if (n.type === 'brain') {
+      grad.addColorStop(0, '#FF6633');
+      grad.addColorStop(1, '#CC3300');
+    } else if (n.type === 'dept') {
+      grad.addColorStop(0, n.color + 'EE');
+      grad.addColorStop(1, n.color + '99');
+    } else {
+      grad.addColorStop(0, n.color);
+      grad.addColorStop(1, n.color + 'AA');
+    }
     ctx.fillStyle = grad;
     ctx.fill();
 
     // Border
-    ctx.strokeStyle = isSelected ? '#FFFFFF' : n.color;
-    ctx.lineWidth = (isSelected ? 2.5 : 1) * camZ;
+    ctx.strokeStyle = isSelected ? '#FFFFFF' : (n.type === 'brain' ? '#FF8855' : n.color);
+    ctx.lineWidth = (isSelected ? 2.5 : n.type === 'brain' ? 2 : 1) * camZ;
     ctx.stroke();
 
     // Emoji
-    const fontSize = Math.max(10, (n.id === 'ceo' ? 18 : 14) * camZ);
+    const emojiSize = n.type === 'brain' ? 24 : (n.type === 'dept' ? 16 : 12);
+    const fontSize = Math.max(8, emojiSize * camZ);
     ctx.font = `${fontSize}px -apple-system,system-ui,sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(n.emoji, p.x, p.y + 1);
 
-    // Name label below
-    if (camZ > 0.5) {
-      ctx.font = `600 ${Math.max(8, 10 * camZ)}px -apple-system,system-ui,sans-serif`;
-      ctx.fillStyle = isDimmed ? '#FFFFFF30' : '#FFFFFFCC';
+    // Name label
+    if (camZ > 0.4) {
+      const labelSize = n.type === 'brain' ? 12 : (n.type === 'dept' ? 10 : 9);
+      ctx.font = `${n.type === 'brain' ? 800 : 600} ${Math.max(7, labelSize * camZ)}px -apple-system,system-ui,sans-serif`;
+      ctx.fillStyle = isDimmed ? '#FFFFFF20' : (n.type === 'brain' ? '#FFFFFFEE' : '#FFFFFFBB');
       ctx.textBaseline = 'top';
-      ctx.fillText(n.name, p.x, p.y + r + 6 * camZ);
+      ctx.fillText(n.name, p.x, p.y + r + 5 * camZ);
+
+      // Dept nodes show agent count underneath
+      if (n.type === 'dept' && camZ > 0.6) {
+        const count = AGENTS.filter(a => a.dept === n.deptKey).length;
+        ctx.font = `600 ${Math.max(6, 7 * camZ)}px -apple-system,system-ui,sans-serif`;
+        ctx.fillStyle = isDimmed ? '#FFFFFF15' : n.color + '88';
+        ctx.fillText(count + ' agents', p.x, p.y + r + 5 * camZ + Math.max(9, 12 * camZ));
+      }
     }
 
     ctx.globalAlpha = 1;
@@ -583,8 +701,9 @@ function draw() {
 // ─── Interaction ───
 function getNodeAt(sx, sy) {
   const w = screenToWorld(sx, sy);
-  for (let i = nodes.length - 1; i >= 0; i--) {
-    const n = nodes[i];
+  // Check in reverse draw order (brain first since it's on top)
+  const checkOrder = [brainNode, ...deptNodes, ...agentNodes];
+  for (const n of checkOrder) {
     const dx = w.x - n.x, dy = w.y - n.y;
     if (dx * dx + dy * dy < (n.radius + 5) * (n.radius + 5)) return n;
   }
@@ -627,8 +746,7 @@ canvas.addEventListener('click', e => {
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
   const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-  const newZ = Math.max(0.3, Math.min(3, camZ * zoomFactor));
-  // Zoom toward cursor
+  const newZ = Math.max(0.25, Math.min(3, camZ * zoomFactor));
   const w = screenToWorld(e.clientX, e.clientY);
   camZ = newZ;
   camX = w.x - (e.clientX - W / 2) / camZ;
@@ -662,7 +780,7 @@ canvas.addEventListener('touchmove', e => {
     const dy = e.touches[1].clientY - e.touches[0].clientY;
     const dist = Math.sqrt(dx * dx + dy * dy);
     if (lastTouchDist) {
-      camZ = Math.max(0.3, Math.min(3, camZ * (dist / lastTouchDist)));
+      camZ = Math.max(0.25, Math.min(3, camZ * (dist / lastTouchDist)));
     }
     lastTouchDist = dist;
   }
@@ -674,56 +792,130 @@ function openPanel(node) {
   document.getElementById('pEmoji').textContent = node.emoji;
   document.getElementById('pName').textContent = node.name;
   document.getElementById('pRole').textContent = node.role;
-  const badge = document.getElementById('pDept');
-  badge.textContent = DEPTS[node.dept].label;
-  badge.style.background = node.color + '20';
-  badge.style.color = node.color;
-  badge.style.border = '1px solid ' + node.color + '40';
 
+  const badge = document.getElementById('pDept');
   let html = '';
 
-  // What it replaces
-  html += '<div class="section-title">What It Replaces</div>';
-  html += '<div class="replaces-box"><div class="replaces-role">' + node.replaces.role + '</div>';
-  html += '<div class="replaces-cost">' + node.replaces.cost + '</div></div>';
+  if (node.type === 'brain') {
+    // Brain panel — company overview
+    badge.textContent = 'Company Brain';
+    badge.style.background = node.color + '20';
+    badge.style.color = node.color;
+    badge.style.border = '1px solid ' + node.color + '40';
 
-  // The Ladder
-  html += '<div class="section-title">The Automation Ladder</div><div class="ladder">';
-  node.ladder.forEach(l => {
-    html += '<div class="ladder-step' + (l.current ? ' current' : '') + '">';
-    html += '<div class="ladder-label">' + l.level + '</div>';
-    html += '<div class="ladder-desc">' + l.desc + '</div></div>';
-  });
-  html += '</div>';
-
-  // Breaks into
-  if (node.breaksInto.length) {
-    html += '<div class="section-title">Breaks Into</div><div class="tag-list">';
-    node.breaksInto.forEach(id => {
-      const t = nodeMap[id];
-      if (t) html += '<div class="tag" style="cursor:pointer;border-color:' + t.color + '40;color:' + t.color + '" onclick="selectById(\'' + id + '\')">' + t.emoji + ' ' + t.name + '</div>';
+    html += '<div class="section-title">Departments</div><div class="dept-agents-list">';
+    deptNodes.forEach(d => {
+      const agentCount = AGENTS.filter(a => a.dept === d.deptKey).length;
+      html += '<div class="dept-agent-card" onclick="selectById(\'' + d.id + '\')">';
+      html += '<div class="dept-agent-emoji">' + d.emoji + '</div>';
+      html += '<div class="dept-agent-info"><div class="dept-agent-name" style="color:' + d.color + '">' + d.name + '</div>';
+      html += '<div class="dept-agent-role">' + agentCount + ' agents — ' + d.role + '</div></div></div>';
     });
     html += '</div>';
-  }
 
-  // Builds on
-  if (node.buildsOn.length) {
-    html += '<div class="section-title">Builds On</div><div class="tag-list">';
-    node.buildsOn.forEach(id => {
-      const t = nodeMap[id];
-      if (t) html += '<div class="tag" style="cursor:pointer;border-color:' + t.color + '40;color:' + t.color + '" onclick="selectById(\'' + id + '\')">' + t.emoji + ' ' + t.name + '</div>';
+    html += '<div class="section-title">Pipeline Flow</div>';
+    html += '<div class="human-note" style="font-size:.65rem;line-height:1.6">Content Package → QA Review (CVI ≥ 70) → Gemini Generation → FFmpeg Processing → QC Inspection → CEO Approval → Autoposter → Post</div>';
+
+    html += '<div class="section-title">🧠 Living Brain — Always Learning</div>';
+    html += '<div class="human-note" style="border-left-color:var(--growth);font-size:.68rem;line-height:1.6">This is not a static system. The company brain continuously absorbs new knowledge — every posted reel\'s performance data, every CEO decision, every viral trend spotted, every QC rejection reason — and feeds learnings back into the pipeline. Each cycle makes the next one smarter.</div>';
+
+    html += '<div class="section-title">Knowledge Loops</div>';
+    html += '<div class="skills-list">';
+    html += '<div class="skill">Post performance → Analytics → adjusts what content gets made</div>';
+    html += '<div class="skill">CVI predictions vs actual → QA recalibrates scoring weights</div>';
+    html += '<div class="skill">CEO rejections → Content learns what to avoid</div>';
+    html += '<div class="skill">DVRI daily scans → Viral feeds trends into next batch</div>';
+    html += '<div class="skill">Comment patterns → Community refines engagement strategy</div>';
+    html += '<div class="skill">Pappu Express benchmarks → QC tightens quality bar over time</div>';
+    html += '</div>';
+
+    html += '<div class="section-title">Operating Rhythm</div>';
+    html += '<div class="skills-list">';
+    html += '<div class="skill">2 reels/day (7 AM + 7 PM IST)</div>';
+    html += '<div class="skill">CVI ≥ 70 to proceed</div>';
+    html += '<div class="skill">Buffer target: 7 days (14 packages)</div>';
+    html += '<div class="skill">Sunday batch planning sprint</div>';
+    html += '<div class="skill">CEO single-approval workflow</div>';
+    html += '<div class="skill">Morning standup → nightly scratchpad review</div>';
+    html += '</div>';
+
+  } else if (node.type === 'dept') {
+    // Department panel — list its agents
+    badge.textContent = node.name + ' Department';
+    badge.style.background = node.color + '20';
+    badge.style.color = node.color;
+    badge.style.border = '1px solid ' + node.color + '40';
+
+    const deptAgents = AGENTS.filter(a => a.dept === node.deptKey);
+
+    html += '<div class="section-title">Agents in ' + node.name + '</div><div class="dept-agents-list">';
+    deptAgents.forEach(a => {
+      html += '<div class="dept-agent-card" onclick="selectById(\'' + a.id + '\')">';
+      html += '<div class="dept-agent-emoji">' + a.emoji + '</div>';
+      html += '<div class="dept-agent-info"><div class="dept-agent-name">' + a.name + '</div>';
+      html += '<div class="dept-agent-role">' + a.role + '</div></div></div>';
     });
     html += '</div>';
+
+    // Total cost replaced
+    const totalCost = deptAgents.map(a => a.replaces.cost).join(', ');
+    html += '<div class="section-title">Human Cost Replaced</div>';
+    html += '<div class="replaces-box">';
+    deptAgents.forEach(a => {
+      html += '<div style="display:flex;justify-content:space-between;margin-bottom:.3rem"><span class="replaces-role" style="font-size:.72rem">' + a.replaces.role + '</span><span style="font-size:.65rem;color:var(--text2)">' + a.replaces.cost + '</span></div>';
+    });
+    html += '</div>';
+
+  } else {
+    // Agent panel — full detail
+    badge.textContent = DEPTS[node.dept].label;
+    badge.style.background = node.color + '20';
+    badge.style.color = node.color;
+    badge.style.border = '1px solid ' + node.color + '40';
+
+    // What it replaces
+    html += '<div class="section-title">What It Replaces</div>';
+    html += '<div class="replaces-box"><div class="replaces-role">' + node.replaces.role + '</div>';
+    html += '<div class="replaces-cost">' + node.replaces.cost + '</div></div>';
+
+    // The Ladder
+    html += '<div class="section-title">The Automation Ladder</div><div class="ladder">';
+    node.ladder.forEach(l => {
+      html += '<div class="ladder-step' + (l.current ? ' current' : '') + '">';
+      html += '<div class="ladder-label">' + l.level + '</div>';
+      html += '<div class="ladder-desc">' + l.desc + '</div></div>';
+    });
+    html += '</div>';
+
+    // Breaks into
+    if (node.breaksInto && node.breaksInto.length) {
+      html += '<div class="section-title">Feeds Into</div><div class="tag-list">';
+      node.breaksInto.forEach(id => {
+        const t = nodeMap[id];
+        if (t) html += '<div class="tag" style="cursor:pointer;border-color:' + t.color + '40;color:' + t.color + '" onclick="selectById(\'' + id + '\')">' + t.emoji + ' ' + t.name + '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Builds on
+    if (node.buildsOn && node.buildsOn.length) {
+      html += '<div class="section-title">Builds On</div><div class="tag-list">';
+      node.buildsOn.forEach(id => {
+        const t = nodeMap[id];
+        if (t) html += '<div class="tag" style="cursor:pointer;border-color:' + t.color + '40;color:' + t.color + '" onclick="selectById(\'' + id + '\')">' + t.emoji + ' ' + t.name + '</div>';
+      });
+      html += '</div>';
+    }
+
+    // The Human
+    html += '<div class="section-title">The Human</div>';
+    html += '<div class="human-note">' + node.human + '</div>';
+
+    // Skills
+    html += '<div class="section-title">Skills</div><div class="skills-list">';
+    node.skills.forEach(s => { html += '<div class="skill">' + s + '</div>'; });
+    html += '</div>';
   }
-
-  // The Human
-  html += '<div class="section-title">The Human</div>';
-  html += '<div class="human-note">' + node.human + '</div>';
-
-  // Skills
-  html += '<div class="section-title">Skills</div><div class="skills-list">';
-  node.skills.forEach(s => { html += '<div class="skill">' + s + '</div>'; });
-  html += '</div>';
 
   document.getElementById('pBody').innerHTML = html;
   document.getElementById('panel').classList.add('open');
@@ -749,13 +941,9 @@ function selectById(id) {
   ).join('');
 })();
 
-function focusDept(dept) {
-  const deptNodes = nodes.filter(n => n.dept === dept);
-  if (!deptNodes.length) return;
-  let cx = 0, cy = 0;
-  deptNodes.forEach(n => { cx += n.x; cy += n.y; });
-  cx /= deptNodes.length; cy /= deptNodes.length;
-  // Animate to department
+function focusDept(deptKey) {
+  const hub = deptNodes.find(d => d.deptKey === deptKey);
+  if (!hub) return;
   const startX = camX, startY = camY, startZ = camZ;
   const targetZ = 1.5;
   let t = 0;
@@ -763,8 +951,8 @@ function focusDept(dept) {
     t += 0.03;
     if (t > 1) t = 1;
     const ease = 1 - Math.pow(1 - t, 3);
-    camX = startX + (cx - startX) * ease;
-    camY = startY + (cy - startY) * ease;
+    camX = startX + (hub.x - startX) * ease;
+    camY = startY + (hub.y - startY) * ease;
     camZ = startZ + (targetZ - startZ) * ease;
     if (t < 1) requestAnimationFrame(animStep);
   }
