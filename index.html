@@ -46,6 +46,7 @@ html,body{
   width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:.35rem;
 }
 .conn-dot.live{background:var(--sage);box-shadow:0 0 6px var(--sage)}
+.conn-dot.synced{background:var(--sky);box-shadow:0 0 6px var(--sky)}
 .conn-dot.offline{background:var(--red)}
 .conn-label{font-size:.65rem;color:var(--text2);font-weight:600}
 
@@ -447,7 +448,7 @@ async function loadData() {
     const resp = await fetch(GITHUB_RAW, { signal: AbortSignal.timeout(8000) });
     if (resp.ok) {
       STATE.posts = await resp.json();
-      STATE.connected = false;
+      STATE.connected = 'github';
       STATE.lastUpdate = Date.now();
       render();
       return;
@@ -475,9 +476,12 @@ function render() {
 function renderConnection() {
   const dot = document.getElementById('connDot');
   const label = document.getElementById('connLabel');
-  if (STATE.connected) {
+  if (STATE.connected === true) {
     dot.className = 'conn-dot live';
     label.textContent = 'Live';
+  } else if (STATE.connected === 'github') {
+    dot.className = 'conn-dot synced';
+    label.textContent = 'Synced';
   } else {
     dot.className = 'conn-dot offline';
     label.textContent = STATE.lastUpdate ? 'Cached' : 'Offline';
