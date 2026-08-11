@@ -10,6 +10,7 @@
   --content:#8B5CF6;--content-dim:#8B5CF620;
   --quality:#10B981;--quality-dim:#10B98120;
   --growth:#3B82F6;--growth-dim:#3B82F620;
+  --finance:#F59E0B;--finance-dim:#F59E0B20;
   --ops:#06B6D4;--ops-dim:#06B6D420;
 }
 html,body{
@@ -156,13 +157,13 @@ canvas.hovering{cursor:pointer}
 
 <div class="title-bar">
   <h1><img src="logo_light.png" alt="IG" class="title-logo"> <span>Insta Garam</span> Studio</h1>
-  <p>AI Agent Organization — 4 Divisions · 11 Agents</p>
+  <p>AI Agent Organization — 5 Divisions · 12 Agents</p>
   <a href="index.html" class="back-link">← Dashboard</a>
 </div>
 
 <div class="stats">
-  <div class="stat-block"><div class="num" style="color:var(--gold)">4</div><div class="label">Divisions</div></div>
-  <div class="stat-block"><div class="num">11</div><div class="label">Agents</div></div>
+  <div class="stat-block"><div class="num" style="color:var(--gold)">5</div><div class="label">Divisions</div></div>
+  <div class="stat-block"><div class="num">12</div><div class="label">Agents</div></div>
 </div>
 
 <div class="instruction" id="instruction">
@@ -195,6 +196,7 @@ const DIVS = {
   content: { label:'Content Studio', color:'#8B5CF6', emoji:'🎬', desc:'Where content is born — ideation, prompts, trend adaptation' },
   quality: { label:'Quality Assurance', color:'#10B981', emoji:'🛡️', desc:'Independent quality function — pre & post production gates' },
   growth:  { label:'Growth & Intel', color:'#3B82F6', emoji:'📊', desc:'Data, audience, distribution — everything that moves the needle' },
+  finance: { label:'Finance & Revenue', color:'#F59E0B', emoji:'💰', desc:'Revenue tracking, P&L, sponsorships, cost optimization' },
   ops:     { label:'Operations', color:'#06B6D4', emoji:'⚙️', desc:'Execution machine — scheduling, planning, publishing' },
 };
 
@@ -350,8 +352,22 @@ const AGENTS = [
     ],
     human:'Approves new product listings. Reviews weekly sales report.',
     skills:['Viral detection','Redbubble/Printful','Catalog management','Sales analytics','Content-to-merch pipeline'],
-    feedsInto:['marketing','content'],
+    feedsInto:['marketing','content','accounts'],
     feedsFrom:['analytics','community'],
+  },
+  {
+    id:'accounts', name:'Accounts Manager', emoji:'💰', div:'finance', lead:true,
+    role:'Division Lead — P&L tracking, revenue streams, costs, sponsorship pipeline',
+    replaces:{role:'Accountant + Revenue Analyst',cost:'₹3-5L/yr'},
+    ladder:[
+      {level:'Human-Led',desc:'User tracks income/expenses manually',current:true},
+      {level:'Human-Assisted',desc:'Agent generates P&L reports, flags revenue opportunities',current:false},
+      {level:'Fully Autonomous',desc:'Auto-tracks all revenue, optimizes costs, weekly reports',current:false},
+    ],
+    human:'CEO reviews weekly P&L. Approves sponsorship deals and cost changes.',
+    skills:['P&L statements','Revenue tracking','Cost optimization','Sponsorship pipeline','Tax compliance','Financial forecasting'],
+    feedsInto:['ceo'],
+    feedsFrom:['merch','analytics','marketing'],
   },
 ];
 
@@ -396,9 +412,9 @@ const AGENT_ORBIT = 95;
 const ceoData = AGENTS.find(a=>a.id==='ceo');
 const ceoNode = {...ceoData,type:'agent',x:0,y:-CEO_ORBIT,radius:24,color:'#D4A853'};
 
-// Division hubs positioned evenly around
-const divKeys = ['content','quality','growth','ops'];
-const divAngles = {content:-Math.PI*.75,quality:-Math.PI*.25,growth:Math.PI*.25,ops:Math.PI*.75};
+// Division hubs positioned evenly around (5 divisions = 72° apart)
+const divKeys = ['content','quality','growth','finance','ops'];
+const divAngles = {content:-Math.PI*.8,quality:-Math.PI*.4,growth:0,finance:Math.PI*.4,ops:Math.PI*.8};
 const divNodes = divKeys.map(k => {
   const d = DIVS[k];
   const a = divAngles[k];
@@ -717,6 +733,7 @@ function openPanel(node){
       {name:'Community',model:'Haiku',color:'#3B82F6',reason:'Reply templates'},
       {name:'Scheduler',model:'Haiku',color:'#06B6D4',reason:'Slot management'},
       {name:'Merch Mgr',model:'Haiku',color:'#3B82F6',reason:'Catalog updates'},
+      {name:'Accounts Mgr',model:'Sonnet',color:'#F59E0B',reason:'Financial analysis'},
     ].forEach(m=>{
       html+='<div style="padding:.35rem .5rem;background:var(--card2);border:1px solid var(--border);border-radius:4px;display:flex;justify-content:space-between;align-items:center">';
       html+='<span style="font-size:.55rem;font-weight:600;color:'+m.color+'">'+m.name+'</span>';
