@@ -49,6 +49,13 @@ html,body{
 .conn-dot.synced{background:var(--sky);box-shadow:0 0 6px var(--sky)}
 .conn-dot.offline{background:var(--red)}
 .conn-label{font-size:.65rem;color:var(--text2);font-weight:600}
+.agent-map-btn{
+  font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--sky);background:var(--sky-dim);border:1px solid var(--sky);
+  padding:.25rem .55rem;border-radius:6px;text-decoration:none;
+  transition:background .2s,color .2s;white-space:nowrap;
+}
+.agent-map-btn:active{background:var(--sky);color:var(--bg)}
 
 /* ── Buffer Meter ── */
 .buffer-strip{
@@ -241,9 +248,12 @@ html,body{
   <!-- Status Bar -->
   <div class="status-bar">
     <div class="logo">🌶️ Insta <span>Garam</span></div>
-    <div style="display:flex;align-items:center">
-      <span class="conn-dot" id="connDot"></span>
-      <span class="conn-label" id="connLabel">Connecting...</span>
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <a href="agents.html" class="agent-map-btn">🗺️ Agents</a>
+      <div style="display:flex;align-items:center">
+        <span class="conn-dot" id="connDot"></span>
+        <span class="conn-label" id="connLabel">Connecting...</span>
+      </div>
     </div>
   </div>
 
