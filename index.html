@@ -344,6 +344,11 @@ html,body{
           <div class="a-label">View Profile</div>
           <div class="a-sub">Open Instagram</div>
         </a>
+        <a class="action-btn" id="btnYouTube" href="https://www.youtube.com/@instagaram.studio" target="_blank" style="border-color:#FF0000;background:rgba(255,0,0,.08)">
+          <div class="a-icon">▶️</div>
+          <div class="a-label" style="color:#FF0000">YouTube</div>
+          <div class="a-sub">Shorts channel</div>
+        </a>
         <a class="action-btn" href="agents.html" style="border-color:var(--creative);background:rgba(166,108,255,.12)">
           <div class="a-icon">🗺️</div>
           <div class="a-label" style="color:var(--creative)">Agent Map</div>
@@ -360,11 +365,30 @@ html,body{
     <!-- Scratchpad -->
     <div class="section" style="margin-top:1.25rem">
       <div class="section-label">CEO Scratchpad</div>
-      <textarea id="scratchpad" placeholder="Drop ideas here... reviewed nightly by agent team"
+      <textarea id="scratchpad" placeholder="Drop ideas, content concepts, strategy notes... Hit Send to save permanently"
         style="width:100%;min-height:100px;background:var(--bg2);border:1px solid var(--border);
         border-radius:var(--radius);padding:.75rem;color:var(--text);font-family:inherit;
-        font-size:.78rem;resize:vertical;outline:none" oninput="saveScratchpad()"></textarea>
-      <div style="font-size:.55rem;color:var(--text3);margin-top:.25rem;text-align:right" id="scratchStatus">Saved</div>
+        font-size:.78rem;resize:vertical;outline:none" oninput="autoSaveScratchpad()"></textarea>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.4rem">
+        <div style="font-size:.55rem;color:var(--text3)" id="scratchStatus">Auto-saved locally</div>
+        <button id="btnSendCEO" onclick="sendToCEO()" style="
+          background:var(--flame);color:#fff;border:none;border-radius:6px;
+          padding:.45rem .85rem;font-size:.7rem;font-weight:700;cursor:pointer;
+          display:flex;align-items:center;gap:.35rem;transition:all .15s;
+          -webkit-tap-highlight-color:transparent;
+        ">📤 Send to CEO</button>
+      </div>
+      <!-- Saved Notes History -->
+      <div id="notesHistory" style="margin-top:.75rem;display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">
+          <div class="section-label" style="margin:0">📋 Saved Notes</div>
+          <span style="font-size:.55rem;color:var(--text3);cursor:pointer" onclick="toggleNotesHistory()">▼ Hide</span>
+        </div>
+        <div id="notesList" class="feed" style="max-height:250px;overflow-y:auto"></div>
+      </div>
+      <div id="notesToggle" style="margin-top:.4rem;display:none">
+        <span style="font-size:.6rem;color:var(--sky);cursor:pointer;font-weight:600" onclick="toggleNotesHistory()">📋 Show Saved Notes (<span id="notesCount">0</span>)</span>
+      </div>
     </div>
   </div>
 
@@ -746,6 +770,7 @@ function renderAnalytics() {
     { name: 'Instagram Graph API', status: 'online', icon: '📸' },
     { name: 'Telegram Bot', status: svc.telegram_bot?.status || 'unknown', icon: '🤖' },
     { name: 'Google Drive Sync', status: 'online', icon: '📁' },
+    { name: 'YouTube Shorts', status: svc.youtube?.status || 'online', icon: '▶️' },
   ];
   services.innerHTML = svcList.map(s => `
     <div class="feed-item ${s.status === 'online' ? 'success' : s.status === 'offline' ? 'error' : 'warning'}">
@@ -839,34 +864,185 @@ function refreshAll() {
 }
 
 // ─── Scratchpad ───
-function saveScratchpad() {
+const TG_BOT = '8880805321:AAFAx1UT46DPvGfqPVx_OMY7wexfvaUVdY8';
+const TG_CHAT = '943021296';
+
+function autoSaveScratchpad() {
   clearTimeout(scratchTimer);
-  document.getElementById('scratchStatus').textContent = 'Saving...';
-  scratchTimer = setTimeout(async () => {
+  document.getElementById('scratchStatus').textContent = 'Typing...';
+  scratchTimer = setTimeout(() => {
     const content = document.getElementById('scratchpad').value;
-    try {
-      await fetch(`${API_BASE}/api/scratchpad`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
-      });
-      document.getElementById('scratchStatus').textContent = 'Saved ✓';
-    } catch {
-      localStorage.setItem('ceo_scratchpad', content);
-      document.getElementById('scratchStatus').textContent = 'Saved locally';
+    localStorage.setItem('ceo_scratchpad_draft', content);
+    document.getElementById('scratchStatus').textContent = content ? 'Draft auto-saved' : '';
+  }, 800);
+}
+
+async function sendToCEO() {
+  const pad = document.getElementById('scratchpad');
+  const content = pad.value.trim();
+  if (!content) { alert('Scratchpad is empty!'); return; }
+
+  const btn = document.getElementById('btnSendCEO');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Sending...';
+  document.getElementById('scratchStatus').textContent = 'Sending to Telegram...';
+
+  // Save to localStorage history
+  const notes = JSON.parse(localStorage.getItem('ceo_notes') || '[]');
+  const note = {
+    id: Date.now(),
+    content: content,
+    timestamp: new Date().toISOString(),
+    sent: false
+  };
+
+  // Send to Telegram
+  try {
+    const now = new Date();
+    const timeStr = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
+    const dateStr = now.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric' });
+    const msg = `📋 *CEO Scratchpad Note*\n📅 ${dateStr} · ${timeStr} IST\n\n${content}\n\n_Sent from Command Center_`;
+
+    const resp = await fetch(`https://api.telegram.org/bot${TG_BOT}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TG_CHAT,
+        text: msg,
+        parse_mode: 'Markdown'
+      })
+    });
+
+    if (resp.ok) {
+      note.sent = true;
+      document.getElementById('scratchStatus').textContent = '✓ Sent to CEO & saved';
+      btn.innerHTML = '✅ Sent!';
+      if (window.Telegram?.WebApp) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+    } else {
+      throw new Error('Telegram API error');
     }
-  }, 1500);
+  } catch (e) {
+    document.getElementById('scratchStatus').textContent = '⚠ Saved locally (Telegram failed)';
+    btn.innerHTML = '⚠ Saved locally';
+  }
+
+  // Always save to local history
+  notes.unshift(note);
+  // Keep last 50 notes
+  if (notes.length > 50) notes.length = 50;
+  localStorage.setItem('ceo_notes', JSON.stringify(notes));
+  localStorage.removeItem('ceo_scratchpad_draft');
+
+  // Clear scratchpad
+  pad.value = '';
+
+  // Refresh notes display
+  renderNotesHistory();
+
+  // Reset button after 2s
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.innerHTML = '📤 Send to CEO';
+  }, 2000);
+}
+
+function renderNotesHistory() {
+  const notes = JSON.parse(localStorage.getItem('ceo_notes') || '[]');
+  const countEl = document.getElementById('notesCount');
+  const toggleEl = document.getElementById('notesToggle');
+  const historyEl = document.getElementById('notesHistory');
+  const listEl = document.getElementById('notesList');
+
+  countEl.textContent = notes.length;
+
+  if (!notes.length) {
+    toggleEl.style.display = 'none';
+    historyEl.style.display = 'none';
+    return;
+  }
+
+  // Show toggle if history is hidden
+  if (historyEl.style.display === 'none') {
+    toggleEl.style.display = 'block';
+  }
+
+  listEl.innerHTML = notes.map(n => {
+    const d = new Date(n.timestamp);
+    const dateStr = d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short' });
+    const timeStr = d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
+    const statusIcon = n.sent ? '✓' : '⚠';
+    const statusColor = n.sent ? 'var(--sage)' : 'var(--gold)';
+    const preview = n.content.length > 120 ? n.content.slice(0, 120) + '...' : n.content;
+    return `
+      <div class="feed-item ${n.sent ? 'success' : 'warning'}" style="cursor:pointer" onclick="restoreNote(${n.id})">
+        <div class="feed-time" style="min-width:2.8rem">
+          <div style="font-size:.6rem">${dateStr}</div>
+          <div style="font-size:.5rem">${timeStr}</div>
+        </div>
+        <div class="feed-body">
+          <div class="fb-title" style="white-space:pre-wrap;word-break:break-word">${escHtml(preview)}</div>
+          <div class="fb-detail"><span style="color:${statusColor}">${statusIcon} ${n.sent ? 'Sent to Telegram' : 'Local only'}</span></div>
+        </div>
+        <div style="flex-shrink:0;cursor:pointer;padding:.25rem" onclick="event.stopPropagation();deleteNote(${n.id})" title="Delete">
+          <span style="color:var(--red);font-size:.7rem">✕</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleNotesHistory() {
+  const historyEl = document.getElementById('notesHistory');
+  const toggleEl = document.getElementById('notesToggle');
+  if (historyEl.style.display === 'none') {
+    historyEl.style.display = 'block';
+    toggleEl.style.display = 'none';
+  } else {
+    historyEl.style.display = 'none';
+    toggleEl.style.display = 'block';
+  }
+}
+
+function restoreNote(id) {
+  const notes = JSON.parse(localStorage.getItem('ceo_notes') || '[]');
+  const note = notes.find(n => n.id === id);
+  if (note) {
+    document.getElementById('scratchpad').value = note.content;
+    document.getElementById('scratchStatus').textContent = 'Restored from history';
+  }
+}
+
+function deleteNote(id) {
+  if (!confirm('Delete this note?')) return;
+  let notes = JSON.parse(localStorage.getItem('ceo_notes') || '[]');
+  notes = notes.filter(n => n.id !== id);
+  localStorage.setItem('ceo_notes', JSON.stringify(notes));
+  renderNotesHistory();
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // Load scratchpad on init
-(async function loadScratchpad() {
-  try {
-    const resp = await fetch(`${API_BASE}/api/scratchpad`);
-    const data = await resp.json();
-    if (data.content) document.getElementById('scratchpad').value = data.content;
-  } catch {
-    const local = localStorage.getItem('ceo_scratchpad');
-    if (local) document.getElementById('scratchpad').value = local;
+(function loadScratchpad() {
+  // Restore draft if any
+  const draft = localStorage.getItem('ceo_scratchpad_draft');
+  if (draft) {
+    document.getElementById('scratchpad').value = draft;
+    document.getElementById('scratchStatus').textContent = 'Draft restored';
   }
+  // Also try old key
+  if (!draft) {
+    const old = localStorage.getItem('ceo_scratchpad');
+    if (old) {
+      document.getElementById('scratchpad').value = old;
+      localStorage.setItem('ceo_scratchpad_draft', old);
+      localStorage.removeItem('ceo_scratchpad');
+    }
+  }
+  // Render notes history
+  renderNotesHistory();
 })();
 </script>
 </body>
